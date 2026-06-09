@@ -1,0 +1,8 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <title>Kontanos - icono</title>
+  <line x1="42" y1="58" x2="78" y2="58" stroke="#86efac" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 9"/>
+  <path d="M42 22 C26 22 13 36 13 52 C13 74 42 100 42 100 C42 100 71 74 71 52 C71 36 58 22 42 22 Z" fill="#15803d"/>
+  <circle cx="42" cy="51" r="11" fill="#dcfce7"/>
+  <path d="M88 22 C72 22 59 36 59 52 C59 74 88 100 88 100 C88 100 117 74 117 52 C117 36 104 22 88 22 Z" fill="#4ade80"/>
+  <circle cx="88" cy="51" r="11" fill="#ffffff"/>
+</svg>

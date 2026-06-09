@@ -1,0 +1,23 @@
+# Sensitive config - override locally
+/config/local.php
+
+# Uploads (user-generated content)
+/assets/uploads/*
+!/assets/uploads/.gitkeep
+
+# PHP errors log
+/php_errors.log
+*.log
+
+# IDE / OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Composer (not used, but just in case)
+/vendor/
+
+# Claude internal session files
+/.claude/

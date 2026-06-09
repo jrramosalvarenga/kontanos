@@ -1,0 +1,14 @@
+<svg width="430" height="92" viewBox="0 0 430 92" xmlns="http://www.w3.org/2000/svg">
+  <title>Kontanos</title>
+  <!-- linea de conexion -->
+  <line x1="34" y1="46" x2="74" y2="46" stroke="#86efac" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 8"/>
+  <!-- pin izquierdo (proveedor) -->
+  <path d="M30 14 C16 14 4 26 4 40 C4 60 30 82 30 82 C30 82 56 60 56 40 C56 26 44 14 30 14 Z" fill="#15803d"/>
+  <circle cx="30" cy="39" r="9" fill="#dcfce7"/>
+  <!-- pin derecho (cliente) -->
+  <path d="M78 14 C64 14 52 26 52 40 C52 60 78 82 78 82 C78 82 104 60 104 40 C104 26 92 14 78 14 Z" fill="#4ade80"/>
+  <circle cx="78" cy="39" r="9" fill="#ffffff"/>
+  <!-- nombre -->
+  <text x="128" y="48" font-family="'Helvetica Neue', Arial, sans-serif" font-size="42" font-weight="500" fill="#15803d" letter-spacing="-1">Kontanos</text>
+  <text x="130" y="74" font-family="'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="400" fill="#22c55e" letter-spacing="2">CONECTAMOS CERCA</text>
+</svg>
