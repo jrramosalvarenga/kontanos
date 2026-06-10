@@ -31,8 +31,17 @@ define('BRAND_SECONDARY', '#4ade80');
 // Unsplash placeholder (sin API key, usando source.unsplash.com)
 define('UNSPLASH_BASE', 'https://images.unsplash.com');
 
+// Local overrides (gitignored) - credenciales y secretos por entorno
+if (file_exists(__DIR__ . '/local.php')) {
+    require_once __DIR__ . '/local.php';
+}
+
 // Google OAuth 2.0
 // Obtén tus credenciales en: https://console.cloud.google.com/apis/credentials
-define('GOOGLE_CLIENT_ID',     getenv('GOOGLE_CLIENT_ID')     ?: '');
-define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
+if (!defined('GOOGLE_CLIENT_ID')) {
+    define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '');
+}
+if (!defined('GOOGLE_CLIENT_SECRET')) {
+    define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
+}
 define('GOOGLE_REDIRECT_URI',  APP_URL . '/oauth/callback.php');

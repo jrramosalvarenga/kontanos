@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 if (isLoggedIn()) {
     header('Location: /dashboard.php');
@@ -78,7 +79,6 @@ if ($user) {
         );
 
         if ($role === 'provider' && $name) {
-            require_once __DIR__ . '/../includes/functions.php';
             $slug = slugify($name) . '-' . substr(uniqid(), -4);
             DB::query(
                 "INSERT INTO provider_profiles (user_id, slug, full_name, avatar_url) VALUES ($1, $2, $3, $4)",
