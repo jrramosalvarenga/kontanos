@@ -51,8 +51,10 @@ $profileUrl = APP_URL . '/p/' . $provider['slug'];
 $loc       = trim(($provider['city'] ?? '') . ', ' . ($provider['country'] ?? ''), ', ');
 
 // OG tags for social sharing
-$pageTitle       = $provider['full_name'] . ' - ' . ($provider['tagline'] ?? $provider['category_name'] ?? 'Profesional') . ' | Kontactanos';
-$pageDescription = $provider['bio'] ? mb_substr(strip_tags($provider['bio']), 0, 160) : 'Perfil de ' . $provider['full_name'] . ' en Kontactanos. Servicio profesional en ' . $loc;
+$service         = $provider['tagline'] ?: $provider['category_name'] ?: 'Servicios profesionales';
+$pageTitle       = $provider['full_name'] . ' - ' . $service . ' | Kontactanos';
+$pageDescription = $service . ($loc ? " en $loc" : '') . '. ' .
+    ($provider['bio'] ? mb_substr(strip_tags($provider['bio']), 0, 120) : 'Contáctalo en Kontactanos.');
 $pageImage       = $provider['avatar_url'] ?? getAvatar(null, $provider['full_name'], '600');
 $pageUrl         = $profileUrl;
 
