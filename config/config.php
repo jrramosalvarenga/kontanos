@@ -1,20 +1,27 @@
 <?php
+// Local overrides (gitignored) - credenciales y config por entorno
+if (file_exists(__DIR__ . '/local.php')) {
+    require_once __DIR__ . '/local.php';
+}
+
 define('APP_NAME', 'Kontactanos');
 define('APP_TAGLINE', 'Conectamos Cerca');
-define('APP_URL', 'http://kontactanos.test');
+if (!defined('APP_URL')) {
+    define('APP_URL', getenv('APP_URL') ?: 'http://kontactanos.test');
+}
 define('APP_DOMAIN', 'kontactanos.com');
 define('APP_VERSION', '1.0.0');
 
 // PostgreSQL Database
-define('DB_HOST', 'localhost');
-define('DB_PORT', '5432');
-define('DB_NAME', 'kontactanos');
-define('DB_USER', 'postgres');
-define('DB_PASS', 'Olanchano.3');
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_PORT', getenv('DB_PORT') ?: '5432');
+define('DB_NAME', getenv('DB_NAME') ?: 'kontactanos');
+define('DB_USER', getenv('DB_USER') ?: 'postgres');
+define('DB_PASS', getenv('DB_PASS') ?: 'Olanchano.3');
 
 // Session
 define('SESSION_LIFETIME', 86400 * 7);
-define('COOKIE_SECURE', false);
+define('COOKIE_SECURE', getenv('COOKIE_SECURE') === '1');
 
 // Uploads
 define('UPLOAD_PATH', __DIR__ . '/../assets/uploads/');
@@ -30,11 +37,6 @@ define('BRAND_SECONDARY', '#4ade80');
 
 // Unsplash placeholder (sin API key, usando source.unsplash.com)
 define('UNSPLASH_BASE', 'https://images.unsplash.com');
-
-// Local overrides (gitignored) - credenciales y secretos por entorno
-if (file_exists(__DIR__ . '/local.php')) {
-    require_once __DIR__ . '/local.php';
-}
 
 // Google OAuth 2.0
 // Obtén tus credenciales en: https://console.cloud.google.com/apis/credentials

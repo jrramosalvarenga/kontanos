@@ -1,0 +1,11 @@
+{
+    "name": "kontactanos/kontactanos",
+    "description": "Kontactanos - Plataforma de conexión local de servicios",
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo_pgsql": "*",
+        "ext-pgsql": "*",
+        "ext-curl": "*",
+        "ext-mbstring": "*"
+    }
+}
