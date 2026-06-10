@@ -23,12 +23,17 @@ class DB {
     }
 
     public static function query(string $sql, array $params = []): PDOStatement {
-        // Convert PostgreSQL $1/$2/... positional placeholders to PDO ? style
+        // Convert PostgreSQL $1/$2/... positional placeholders to PDO named placeholders
+        // (named placeholders allow the same parameter to be reused multiple times in a query)
+        $bound = [];
         if (!empty($params)) {
-            $sql = preg_replace('/\$\d+/', '?', $sql);
+            $sql = preg_replace('/\$(\d+)/', ':p$1', $sql);
+            foreach ($params as $i => $value) {
+                $bound[':p' . ($i + 1)] = $value;
+            }
         }
         $stmt = self::conn()->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute($bound);
         return $stmt;
     }
 
