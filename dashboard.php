@@ -122,7 +122,7 @@ require_once __DIR__ . '/includes/header.php';
                    class="flex-1 text-center text-xs py-2 bg-brand-50 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 transition-colors">
                     Ver perfil →
                 </a>
-                <button onclick="shareProfile('<?= e(APP_URL . '/p/' . $profile['slug']) ?>', '', 'copy')"
+                <button onclick="copyToClipboard('<?= e(APP_URL . '/p/' . $profile['slug']) ?>', '¡Enlace copiado! Compártelo donde quieras.')"
                         class="flex-1 text-center text-xs py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors">
                     Copiar enlace
                 </button>

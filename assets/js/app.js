@@ -39,29 +39,6 @@ function copyToClipboard(text, feedback = 'Copiado al portapapeles') {
     });
 }
 
-// ===== Share Profile =====
-function shareProfile(url, title, platform) {
-    const encoded  = encodeURIComponent(url);
-    const encTitle = encodeURIComponent(title);
-
-    const urls = {
-        whatsapp:  `https://wa.me/?text=${encTitle}%20${encoded}`,
-        facebook:  `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
-        twitter:   `https://twitter.com/intent/tweet?url=${encoded}&text=${encTitle}`,
-        linkedin:  `https://www.linkedin.com/sharing/share-offsite/?url=${encoded}`,
-        telegram:  `https://t.me/share/url?url=${encoded}&text=${encTitle}`,
-    };
-
-    if (platform === 'copy') {
-        copyToClipboard(url, '¡Enlace copiado! Compártelo donde quieras.');
-        return;
-    }
-
-    if (urls[platform]) {
-        window.open(urls[platform], '_blank', 'width=600,height=400,noopener,noreferrer');
-    }
-}
-
 // ===== Image Preview on Upload =====
 function previewImage(input, previewId) {
     const preview = document.getElementById(previewId);
