@@ -7,12 +7,14 @@ $q        = trim($_GET['q'] ?? '');
 $category = trim($_GET['category'] ?? '');
 $location = trim($_GET['location'] ?? '');
 $country  = trim($_GET['country'] ?? '');
+$region   = trim($_GET['region'] ?? '');
 
 $filters = [];
 if ($q)        $filters['q']        = $q;
 if ($category) $filters['category'] = $category;
 if ($location) $filters['location'] = $location;
 if ($country)  $filters['country']  = $country;
+if ($region)   $filters['region']   = $region;
 
 $results    = searchProviders($filters);
 $categories = getCategories();
@@ -20,11 +22,11 @@ $categories = getCategories();
 $activeCategory = $category ? DB::fetch("SELECT * FROM categories WHERE slug = $1", [$category]) : null;
 $activeLocation = $location ? DB::fetch("SELECT * FROM locations WHERE slug = $1", [$location]) : null;
 
-// Pre-load locations for cascade selector
-$allLocations = DB::fetchAll("SELECT id, country, state, city, slug FROM locations WHERE is_active = TRUE ORDER BY country, city");
+// Pre-load locations for cascade selector (país -> región -> ciudad)
+$allLocations = DB::fetchAll("SELECT id, country, state, city, slug FROM locations WHERE is_active = TRUE ORDER BY country, state, city");
 $locationsByCountry = [];
 foreach ($allLocations as $loc) {
-    $locationsByCountry[$loc['country']][] = ['slug' => $loc['slug'], 'city' => $loc['city'], 'state' => $loc['state']];
+    $locationsByCountry[$loc['country']][$loc['state']][] = ['slug' => $loc['slug'], 'city' => $loc['city']];
 }
 uksort($locationsByCountry, function($a, $b) {
     if ($a === 'Honduras') return -1;
@@ -33,6 +35,7 @@ uksort($locationsByCountry, function($a, $b) {
 });
 $locationsJson = json_encode($locationsByCountry, JSON_UNESCAPED_UNICODE);
 $currentCountry = $activeLocation ? $activeLocation['country'] : $country;
+$currentRegion  = $activeLocation ? $activeLocation['state'] : $region;
 
 $pageTitle = 'Buscar Servicios y Profesionales' . ($q ? " - \"$q\"" : '') . ' | Kontactanos';
 $pageDescription = 'Encuentra los mejores profesionales y servicios cerca de ti. Plomeros, electricistas, diseñadores, médicos y más.';
@@ -89,15 +92,18 @@ function renderProviderCard(array $pro): string {
 <!-- Page header -->
 <div class="bg-white border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Search form with cascade country→city -->
+        <!-- Search form with cascade country→region→city -->
         <form method="GET" action="/search.php" class="flex flex-col sm:flex-row gap-3 mb-6"
               x-data="{
                   locations: <?= $locationsJson ?>,
                   selectedCountry: '<?= addslashes($currentCountry) ?>',
+                  selectedRegion: '<?= addslashes($currentRegion) ?>',
                   selectedCity: '<?= addslashes($location) ?>',
                   get countries() { return Object.keys(this.locations); },
-                  get cities() { return this.selectedCountry ? (this.locations[this.selectedCountry] || []) : []; },
-                  onCountryChange() { this.selectedCity = ''; }
+                  get regions() { return this.selectedCountry ? Object.keys(this.locations[this.selectedCountry] || {}) : []; },
+                  get cities() { return (this.selectedCountry && this.selectedRegion) ? (this.locations[this.selectedCountry]?.[this.selectedRegion] || []) : []; },
+                  onCountryChange() { this.selectedRegion = ''; this.selectedCity = ''; },
+                  onRegionChange() { this.selectedCity = ''; }
               }">
             <div class="flex items-center gap-3 flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition-all">
                 <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +113,7 @@ function renderProviderCard(array $pro): string {
                        class="bg-transparent outline-none w-full text-gray-800 placeholder-gray-400">
             </div>
             <!-- Country filter -->
-            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-44">
+            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-40">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
                 </svg>
@@ -120,15 +126,30 @@ function renderProviderCard(array $pro): string {
                     </template>
                 </select>
             </div>
+            <!-- Region/State filter -->
+            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-44">
+                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+                <select name="region" class="bg-transparent outline-none w-full text-sm text-gray-700"
+                        x-model="selectedRegion"
+                        @change="onRegionChange()"
+                        :disabled="!selectedCountry">
+                    <option value=""><span x-show="!selectedCountry">Región</span><span x-show="selectedCountry">Todas</span></option>
+                    <template x-for="r in regions" :key="r">
+                        <option :value="r" x-text="r"></option>
+                    </template>
+                </select>
+            </div>
             <!-- City filter -->
-            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-52">
+            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-44">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                 </svg>
                 <select name="location" class="bg-transparent outline-none w-full text-sm text-gray-700"
                         x-model="selectedCity"
-                        :disabled="!selectedCountry">
-                    <option value=""><span x-show="!selectedCountry">Ciudad</span><span x-show="selectedCountry">Todas</span></option>
+                        :disabled="!selectedRegion">
+                    <option value=""><span x-show="!selectedRegion">Ciudad</span><span x-show="selectedRegion">Todas</span></option>
                     <template x-for="city in cities" :key="city.slug">
                         <option :value="city.slug" x-text="city.city"></option>
                     </template>
@@ -141,8 +162,12 @@ function renderProviderCard(array $pro): string {
         <?php
         $extraParams = '';
         if ($q)        $extraParams .= '&q=' . urlencode($q);
-        if ($location) $extraParams .= '&location=' . urlencode($location);
-        elseif ($country) $extraParams .= '&country=' . urlencode($country);
+        if ($location) {
+            $extraParams .= '&location=' . urlencode($location);
+        } else {
+            if ($country) $extraParams .= '&country=' . urlencode($country);
+            if ($region)  $extraParams .= '&region=' . urlencode($region);
+        }
         ?>
         <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <a href="/search.php<?= $extraParams ? '?'.ltrim($extraParams, '&') : '' ?>"
@@ -176,7 +201,9 @@ function renderProviderCard(array $pro): string {
             <p class="text-gray-500 text-sm mt-0.5">
                 <?= count($results) ?> profesional<?= count($results) != 1 ? 'es' : '' ?> encontrado<?= count($results) != 1 ? 's' : '' ?>
                 <?php if ($activeLocation): ?>
-                    en <?= e($activeLocation['city']) ?>, <?= e($activeLocation['country']) ?>
+                    en <?= e($activeLocation['city']) ?>, <?= e($activeLocation['state']) ?>, <?= e($activeLocation['country']) ?>
+                <?php elseif ($region): ?>
+                    en <?= e($region) ?><?= $country ? ', ' . e($country) : '' ?>
                 <?php elseif ($country): ?>
                     en <?= e($country) ?>
                 <?php endif; ?>
