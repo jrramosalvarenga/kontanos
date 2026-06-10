@@ -84,6 +84,10 @@ function searchProviders(array $filters): array {
         $conditions[] = "l.slug = $" . $i;
         $params[] = $filters['location'];
         $i++;
+    } elseif (!empty($filters['country'])) {
+        $conditions[] = "l.country = $" . $i;
+        $params[] = $filters['country'];
+        $i++;
     }
 
     $where = implode(' AND ', $conditions);

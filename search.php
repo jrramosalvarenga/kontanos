@@ -6,11 +6,13 @@ require_once __DIR__ . '/includes/functions.php';
 $q        = trim($_GET['q'] ?? '');
 $category = trim($_GET['category'] ?? '');
 $location = trim($_GET['location'] ?? '');
+$country  = trim($_GET['country'] ?? '');
 
 $filters = [];
 if ($q)        $filters['q']        = $q;
 if ($category) $filters['category'] = $category;
 if ($location) $filters['location'] = $location;
+if ($country)  $filters['country']  = $country;
 
 $results    = searchProviders($filters);
 $categories = getCategories();
@@ -30,7 +32,7 @@ uksort($locationsByCountry, function($a, $b) {
     return strcmp($a, $b);
 });
 $locationsJson = json_encode($locationsByCountry, JSON_UNESCAPED_UNICODE);
-$currentCountry = $activeLocation ? $activeLocation['country'] : '';
+$currentCountry = $activeLocation ? $activeLocation['country'] : $country;
 
 $pageTitle = 'Buscar Servicios y Profesionales' . ($q ? " - \"$q\"" : '') . ' | Kontactanos';
 $pageDescription = 'Encuentra los mejores profesionales y servicios cerca de ti. Plomeros, electricistas, diseñadores, médicos y más.';
@@ -104,12 +106,12 @@ function renderProviderCard(array $pro): string {
                 <input type="text" name="q" value="<?= e($q) ?>" placeholder="¿Qué servicio necesitas?"
                        class="bg-transparent outline-none w-full text-gray-800 placeholder-gray-400">
             </div>
-            <!-- Country filter (no name = not sent as URL param) -->
+            <!-- Country filter -->
             <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-44">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
                 </svg>
-                <select class="bg-transparent outline-none w-full text-sm text-gray-700"
+                <select name="country" class="bg-transparent outline-none w-full text-sm text-gray-700"
                         x-model="selectedCountry"
                         @change="onCountryChange()">
                     <option value="">País</option>
@@ -136,13 +138,19 @@ function renderProviderCard(array $pro): string {
         </form>
 
         <!-- Category chips -->
+        <?php
+        $extraParams = '';
+        if ($q)        $extraParams .= '&q=' . urlencode($q);
+        if ($location) $extraParams .= '&location=' . urlencode($location);
+        elseif ($country) $extraParams .= '&country=' . urlencode($country);
+        ?>
         <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            <a href="/search.php<?= $q ? '?q='.urlencode($q) : '' ?>"
+            <a href="/search.php<?= $extraParams ? '?'.ltrim($extraParams, '&') : '' ?>"
                class="filter-chip flex-shrink-0 <?= !$category ? 'active' : '' ?>">
                 Todos
             </a>
             <?php foreach ($categories as $cat): ?>
-            <a href="/search.php?category=<?= e($cat['slug']) ?><?= $q ? '&q='.urlencode($q) : '' ?>"
+            <a href="/search.php?category=<?= e($cat['slug']) ?><?= $extraParams ?>"
                class="filter-chip flex-shrink-0 <?= $category === $cat['slug'] ? 'active' : '' ?>">
                 <?= e($cat['name']) ?>
             </a>
@@ -167,7 +175,11 @@ function renderProviderCard(array $pro): string {
             </h1>
             <p class="text-gray-500 text-sm mt-0.5">
                 <?= count($results) ?> profesional<?= count($results) != 1 ? 'es' : '' ?> encontrado<?= count($results) != 1 ? 's' : '' ?>
-                <?= $activeLocation ? 'en ' . e($activeLocation['city']) : '' ?>
+                <?php if ($activeLocation): ?>
+                    en <?= e($activeLocation['city']) ?>, <?= e($activeLocation['country']) ?>
+                <?php elseif ($country): ?>
+                    en <?= e($country) ?>
+                <?php endif; ?>
             </p>
         </div>
 
