@@ -9,6 +9,13 @@ $pageDescription = 'Encuentra plomeros, electricistas, médicos, diseñadores y 
 $categories = getCategories();
 $featured   = getFeaturedProviders(8);
 
+// Ciudades para el autocompletado del buscador
+$cityOptions = array_map(fn($l) => [
+    'slug'  => $l['slug'],
+    'label' => $l['city'] . ', ' . $l['country'],
+], getLocations());
+$cityOptionsJson = json_encode($cityOptions, JSON_UNESCAPED_UNICODE);
+
 // Stats (en producción vendrían de la DB)
 $stats = [
     ['value' => '10,000+', 'label' => 'Profesionales activos'],
@@ -91,17 +98,38 @@ require_once __DIR__ . '/includes/header.php';
                                    class="w-full outline-none text-gray-800 placeholder-gray-400 text-sm sm:text-base">
                         </div>
                         <div class="hidden sm:block w-px bg-gray-200 self-stretch mx-1"></div>
-                        <div class="flex items-center gap-3 flex-1 px-3 py-2">
+                        <div class="flex items-center gap-3 flex-1 px-3 py-2 relative"
+                             x-data="{
+                                query: '',
+                                selectedSlug: '',
+                                open: false,
+                                locations: <?= e($cityOptionsJson) ?>,
+                                norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); },
+                                get filtered() {
+                                    if (!this.query) return this.locations.slice(0, 8);
+                                    const q = this.norm(this.query);
+                                    return this.locations.filter(l => this.norm(l.label).includes(q)).slice(0, 8);
+                                },
+                                select(loc) { this.query = loc.label; this.selectedSlug = loc.slug; this.open = false; }
+                             }"
+                             @click.outside="open = false">
                             <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
-                            <select name="location" class="w-full outline-none text-gray-600 text-sm sm:text-base bg-transparent">
-                                <option value="">Todas las ciudades</option>
-                                <?php foreach (getLocations() as $loc): ?>
-                                    <option value="<?= e($loc['slug']) ?>"><?= e($loc['city'] . ', ' . $loc['country']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <input type="text" x-model="query" @focus="open = true"
+                                   @input="selectedSlug = ''"
+                                   placeholder="¿En qué ciudad?" autocomplete="off"
+                                   class="w-full outline-none text-gray-600 placeholder-gray-400 text-sm sm:text-base bg-transparent">
+                            <input type="hidden" name="location" :value="selectedSlug">
+                            <div x-show="open && filtered.length" x-cloak
+                                 class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto z-20 text-left">
+                                <template x-for="loc in filtered" :key="loc.slug">
+                                    <button type="button" @click="select(loc)"
+                                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                                            x-text="loc.label"></button>
+                                </template>
+                            </div>
                         </div>
                         <button type="submit" class="btn-primary sm:px-8 py-3 w-full sm:w-auto rounded-xl text-sm sm:text-base font-semibold whitespace-nowrap">
                             Buscar

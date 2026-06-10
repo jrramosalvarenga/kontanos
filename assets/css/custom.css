@@ -6,6 +6,8 @@
 
 html, body { max-width: 100%; overflow-x: hidden; }
 
+[x-cloak] { display: none !important; }
+
 body { font-family: 'Inter', system-ui, sans-serif; }
 
 /* ===== BUTTONS ===== */
