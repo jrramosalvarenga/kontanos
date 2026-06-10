@@ -1,5 +1,47 @@
 // Kontactanos - Main JavaScript
 
+// ===== Geo Auto-detect (search form) =====
+// Detecta país/ciudad del usuario por IP y preselecciona los filtros de ubicación
+// solo en la primera visita sin filtros aplicados (evita sobrescribir al usuario).
+function detectUserLocation(form) {
+    if (form.selectedCountry || form.selectedRegion || form.selectedCity || form.q) return;
+    if (sessionStorage.getItem('geoDetected')) return;
+    sessionStorage.setItem('geoDetected', '1');
+
+    const normalize = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    const countryAliases = {
+        'brazil': 'Brasil',
+        'spain': 'España',
+        'united states': 'Estados Unidos',
+        'mexico': 'México',
+        'panama': 'Panamá',
+        'peru': 'Perú',
+        'dominican republic': 'República Dominicana',
+    };
+
+    fetch('https://ipapi.co/json/')
+        .then(r => r.json())
+        .then(data => {
+            if (!data || !data.country_name) return;
+            const aliasedName = countryAliases[normalize(data.country_name)] || data.country_name;
+            const matchedCountry = Object.keys(form.locations).find(c => normalize(c) === normalize(aliasedName));
+            if (!matchedCountry) return;
+
+            form.selectedCountry = matchedCountry;
+            const states = form.locations[matchedCountry] || {};
+            for (const [state, cities] of Object.entries(states)) {
+                const matchedCity = cities.find(c => normalize(c.city) === normalize(data.city));
+                if (matchedCity) {
+                    form.selectedRegion = state;
+                    form.selectedCity = matchedCity.slug;
+                    break;
+                }
+            }
+            form.$el.submit();
+        })
+        .catch(() => {});
+}
+
 // ===== Toast Notifications =====
 function showToast(message, type = 'success', duration = 4000) {
     const container = document.getElementById('toast-container');

@@ -95,7 +95,7 @@ function renderProviderCard(array $pro): string {
         <!-- Search form with cascade country→region→city -->
         <form method="GET" action="/search.php" class="flex flex-col sm:flex-row gap-3 mb-6"
               x-data="{
-                  locations: <?= $locationsJson ?>,
+                  locations: <?= e($locationsJson) ?>,
                   selectedCountry: '<?= addslashes($currentCountry) ?>',
                   selectedRegion: '<?= addslashes($currentRegion) ?>',
                   selectedCity: '<?= addslashes($location) ?>',
@@ -103,7 +103,8 @@ function renderProviderCard(array $pro): string {
                   get regions() { return this.selectedCountry ? Object.keys(this.locations[this.selectedCountry] || {}) : []; },
                   get cities() { return (this.selectedCountry && this.selectedRegion) ? (this.locations[this.selectedCountry]?.[this.selectedRegion] || []) : []; },
                   onCountryChange() { this.selectedRegion = ''; this.selectedCity = ''; },
-                  onRegionChange() { this.selectedCity = ''; }
+                  onRegionChange() { this.selectedCity = ''; },
+                  init() { detectUserLocation(this); }
               }">
             <div class="flex items-center gap-3 flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition-all">
                 <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
