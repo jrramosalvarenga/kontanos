@@ -9,7 +9,7 @@ define('APP_TAGLINE', 'Conectamos Cerca');
 if (!defined('APP_URL')) {
     define('APP_URL', getenv('APP_URL') ?: 'http://kontactanos.test');
 }
-define('APP_DOMAIN', 'kontactanos.com');
+define('APP_DOMAIN', 'kontanos.com');
 define('APP_VERSION', '1.0.0');
 
 // PostgreSQL Database
