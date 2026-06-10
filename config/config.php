@@ -13,11 +13,22 @@ define('APP_DOMAIN', 'kontanos.com');
 define('APP_VERSION', '1.0.0');
 
 // PostgreSQL Database
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_PORT', getenv('DB_PORT') ?: '5432');
-define('DB_NAME', getenv('DB_NAME') ?: 'kontactanos');
-define('DB_USER', getenv('DB_USER') ?: 'postgres');
-define('DB_PASS', getenv('DB_PASS') ?: 'Olanchano.3');
+// Si existe DATABASE_URL (Render la inyecta al vincular la BD), se usa esa.
+$databaseUrl = getenv('DATABASE_URL');
+if ($databaseUrl) {
+    $dbParts = parse_url($databaseUrl);
+    define('DB_HOST', $dbParts['host']);
+    define('DB_PORT', (string)($dbParts['port'] ?? '5432'));
+    define('DB_NAME', ltrim($dbParts['path'], '/'));
+    define('DB_USER', $dbParts['user']);
+    define('DB_PASS', $dbParts['pass']);
+} else {
+    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    define('DB_PORT', getenv('DB_PORT') ?: '5432');
+    define('DB_NAME', getenv('DB_NAME') ?: 'kontactanos');
+    define('DB_USER', getenv('DB_USER') ?: 'postgres');
+    define('DB_PASS', getenv('DB_PASS') ?: 'Olanchano.3');
+}
 
 // Session
 define('SESSION_LIFETIME', 86400 * 7);
