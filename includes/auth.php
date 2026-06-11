@@ -36,11 +36,18 @@ function register(array $data): array {
     $hash = password_hash($data['password'], PASSWORD_BCRYPT);
     $role = $data['role'] ?? 'client';
 
+    $referrerId = null;
+    if (!empty($data['ref_code'])) {
+        $referrer = DB::fetch("SELECT id FROM users WHERE referral_code = $1", [strtoupper(trim($data['ref_code']))]);
+        $referrerId = $referrer['id'] ?? null;
+    }
+    $referralCode = generateReferralCode();
+
     DB::conn()->beginTransaction();
     try {
         $userId = DB::insert(
-            "INSERT INTO users (email, password_hash, role, is_verified) VALUES ($1, $2, $3, $4) RETURNING id",
-            [$email, $hash, $role, TRUE]
+            "INSERT INTO users (email, password_hash, role, is_verified, referral_code, referred_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+            [$email, $hash, $role, TRUE, $referralCode, $referrerId]
         );
 
         if ($role === 'provider') {
@@ -61,6 +68,11 @@ function register(array $data): array {
         }
 
         DB::conn()->commit();
+
+        if ($referrerId) {
+            awardReferralPoints($userId, $role);
+        }
+
         $_SESSION['user_id']    = $userId;
         $_SESSION['user_email'] = $email;
         $_SESSION['user_role']  = $role;
@@ -89,6 +101,14 @@ function requireLogin(): void {
 function requireProvider(): void {
     requireLogin();
     if ($_SESSION['user_role'] !== 'provider') {
+        header('Location: /dashboard.php');
+        exit;
+    }
+}
+
+function requireAdmin(): void {
+    requireLogin();
+    if ($_SESSION['user_role'] !== 'admin') {
         header('Location: /dashboard.php');
         exit;
     }

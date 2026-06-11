@@ -8,6 +8,7 @@ $pageDescription = 'Encuentra plomeros, electricistas, médicos, diseñadores y 
 
 $categories = getCategories();
 $featured   = getFeaturedProviders(8);
+$homeBannerAds = getActiveAds('home_banner');
 
 // Ciudades para el autocompletado del buscador
 $cityOptions = array_map(fn($l) => [
@@ -328,6 +329,15 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </section>
 
+<!-- ===== AD BANNER ===== -->
+<?php if (!empty($homeBannerAds)): ?>
+<section class="pt-10 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <?= renderAdBanner($homeBannerAds[0]) ?>
+    </div>
+</section>
+<?php endif; ?>
+
 <!-- ===== FEATURED PROVIDERS ===== -->
 <?php if (!empty($featured)): ?>
 <section class="py-20 bg-gray-50">
@@ -518,56 +528,4 @@ function getCategoryIconSvg(string $icon, string $color): string {
     return '<svg class="w-7 h-7" fill="none" stroke="' . $color . '" viewBox="0 0 24 24">' . $path . '</svg>';
 }
 
-function renderProviderCard(array $pro): string {
-    $avatar = getAvatar($pro['avatar_url'] ?? null, $pro['full_name'], '200');
-    $stars  = renderStars((float)($pro['rating_avg'] ?? 0));
-    $loc    = trim(($pro['city'] ?? '') . ', ' . ($pro['country'] ?? ''), ', ');
-    $price  = '';
-    ob_start();
-    ?>
-    <a href="/p/<?= e($pro['slug']) ?>" class="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
-        <div class="relative h-40 bg-gradient-to-br from-brand-800 to-brand-600 overflow-hidden">
-            <?php if ($pro['cover_url']): ?>
-                <img src="<?= e($pro['cover_url']) ?>" alt="" class="w-full h-full object-cover opacity-60">
-            <?php else: ?>
-                <div class="absolute inset-0 opacity-20" style="background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&h=160&q=50'); background-size:cover;"></div>
-            <?php endif; ?>
-            <?php if ($pro['is_featured']): ?>
-            <span class="absolute top-3 right-3 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full">Destacado</span>
-            <?php endif; ?>
-            <?php if ($pro['is_verified']): ?>
-            <span class="absolute top-3 left-3 bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-full border border-white/30">✓ Verificado</span>
-            <?php endif; ?>
-        </div>
-        <div class="flex flex-col flex-1 p-5 -mt-8 relative">
-            <img src="<?= e($avatar) ?>" alt="<?= e($pro['full_name']) ?>"
-                 class="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-md mb-3">
-            <h3 class="font-bold text-gray-900 text-base leading-tight mb-1 group-hover:text-brand-700 transition-colors"><?= e($pro['full_name']) ?></h3>
-            <?php if ($pro['tagline']): ?>
-            <p class="text-gray-500 text-xs mb-2 line-clamp-2"><?= e($pro['tagline']) ?></p>
-            <?php endif; ?>
-            <div class="flex items-center gap-2 mb-3">
-                <?= $stars ?>
-                <?php if ($pro['rating_count'] > 0): ?>
-                <span class="text-xs text-gray-400">(<?= (int)$pro['rating_count'] ?>)</span>
-                <?php endif; ?>
-            </div>
-            <div class="mt-auto flex items-center justify-between">
-                <div class="flex items-center gap-1 text-xs text-gray-500">
-                    <svg class="w-3.5 h-3.5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    </svg>
-                    <?= e($loc ?: 'N/A') ?>
-                </div>
-                <?php if ($pro['category_name']): ?>
-                <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: <?= e($pro['category_color'] ?? '#15803d') ?>20; color: <?= e($pro['category_color'] ?? '#15803d') ?>">
-                    <?= e($pro['category_name']) ?>
-                </span>
-                <?php endif; ?>
-            </div>
-        </div>
-    </a>
-    <?php
-    return ob_get_clean();
-}
 ?>

@@ -10,6 +10,7 @@ if (isLoggedIn()) {
 
 $role = in_array($_GET['role'] ?? '', ['provider', 'client']) ? $_GET['role'] : 'provider';
 $errors = [];
+$refCode = trim($_POST['ref_code'] ?? $_GET['ref'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
@@ -127,6 +128,7 @@ require_once __DIR__ . '/includes/header.php';
                   }">
                 <input type="hidden" name="_token" value="<?= csrfToken() ?>">
                 <input type="hidden" name="role" value="<?= e($role) ?>">
+                <input type="hidden" name="ref_code" value="<?= e($refCode) ?>">
 
                 <!-- Email & Password -->
                 <div class="grid sm:grid-cols-2 gap-4">

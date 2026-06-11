@@ -29,13 +29,15 @@ function getFeaturedProviders(int $limit = 8): array {
     return DB::fetchAll("
         SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
                l.city, l.state, l.country,
-               u.email
+               u.email,
+               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
         FROM provider_profiles pp
         JOIN users u ON u.id = pp.user_id
         LEFT JOIN categories c ON c.id = pp.category_id
         LEFT JOIN locations l ON l.id = pp.location_id
+        LEFT JOIN ranks rk ON rk.id = u.rank_id
         WHERE pp.is_featured = TRUE AND u.is_active = TRUE
-        ORDER BY pp.rating_avg DESC, pp.profile_views DESC
+        ORDER BY pp.admin_priority DESC, COALESCE(rk.search_boost, 0) DESC, pp.rating_avg DESC, pp.profile_views DESC
         LIMIT $1
     ", [$limit]);
 }
@@ -44,11 +46,13 @@ function getProviderBySlug(string $slug): ?array {
     return DB::fetch("
         SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
                l.city, l.state, l.country,
-               u.email
+               u.email,
+               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
         FROM provider_profiles pp
         JOIN users u ON u.id = pp.user_id
         LEFT JOIN categories c ON c.id = pp.category_id
         LEFT JOIN locations l ON l.id = pp.location_id
+        LEFT JOIN ranks rk ON rk.id = u.rank_id
         WHERE pp.slug = $1 AND u.is_active = TRUE
     ", [$slug]);
 }
@@ -98,15 +102,17 @@ function searchProviders(array $filters): array {
     }
 
     $where = implode(' AND ', $conditions);
-    $order = "pp.is_featured DESC, pp.rating_avg DESC, pp.profile_views DESC";
+    $order = "pp.admin_priority DESC, COALESCE(rk.search_boost, 0) DESC, pp.is_featured DESC, pp.rating_avg DESC, pp.profile_views DESC";
 
     return DB::fetchAll("
         SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
-               l.city, l.state, l.country
+               l.city, l.state, l.country,
+               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
         FROM provider_profiles pp
         JOIN users u ON u.id = pp.user_id
         LEFT JOIN categories c ON c.id = pp.category_id
         LEFT JOIN locations l ON l.id = pp.location_id
+        LEFT JOIN ranks rk ON rk.id = u.rank_id
         WHERE $where
         ORDER BY $order
         LIMIT 50
@@ -174,6 +180,221 @@ function currentUser(): ?array {
 
 function getOGImageUrl(array $provider): string {
     return $provider['avatar_url'] ?? getAvatar(null, $provider['full_name'], '400');
+}
+
+// ============================================================
+// Sistema de referidos / puntos / rangos
+// ============================================================
+
+const REFERRAL_POINTS = [
+    'provider' => ['l1' => 10, 'l2' => 3],
+    'client'   => ['l1' => 2,  'l2' => 1],
+];
+
+function generateReferralCode(): string {
+    do {
+        $code = strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+        $exists = DB::fetch("SELECT id FROM users WHERE referral_code = $1", [$code]);
+    } while ($exists);
+    return $code;
+}
+
+function getRanks(): array {
+    return DB::fetchAll("SELECT * FROM ranks ORDER BY min_points");
+}
+
+function getRankById(int $id): ?array {
+    return DB::fetch("SELECT * FROM ranks WHERE id = $1", [$id]);
+}
+
+function recalculateRank(int $userId): void {
+    $user = DB::fetch("SELECT points FROM users WHERE id = $1", [$userId]);
+    if (!$user) return;
+    $rank = DB::fetch("SELECT id FROM ranks WHERE min_points <= $1 ORDER BY min_points DESC LIMIT 1", [$user['points']]);
+    if ($rank) {
+        DB::query("UPDATE users SET rank_id = $1 WHERE id = $2", [$rank['id'], $userId]);
+    }
+}
+
+function addPoints(int $userId, int $points, int $level, int $sourceUserId, string $reason): void {
+    DB::query("UPDATE users SET points = points + $1 WHERE id = $2", [$points, $userId]);
+    DB::query("
+        INSERT INTO point_transactions (user_id, points, level, source_user_id, reason)
+        VALUES ($1, $2, $3, $4, $5)
+    ", [$userId, $points, $level, $sourceUserId, $reason]);
+    recalculateRank($userId);
+}
+
+function awardReferralPoints(int $newUserId, string $newUserRole): void {
+    $points = REFERRAL_POINTS[$newUserRole] ?? REFERRAL_POINTS['client'];
+
+    $newUser = DB::fetch("SELECT referred_by FROM users WHERE id = $1", [$newUserId]);
+    $level1Id = $newUser['referred_by'] ?? null;
+    if (!$level1Id) return;
+
+    $roleLabel = $newUserRole === 'provider' ? 'profesional' : 'cliente';
+    addPoints($level1Id, $points['l1'], 1, $newUserId, "Referido directo: nuevo $roleLabel");
+
+    $level1User = DB::fetch("SELECT referred_by FROM users WHERE id = $1", [$level1Id]);
+    $level2Id = $level1User['referred_by'] ?? null;
+    if ($level2Id) {
+        addPoints($level2Id, $points['l2'], 2, $newUserId, "Referido de tu referido: nuevo $roleLabel");
+    }
+}
+
+function renderRankBadge(?array $rank, bool $small = false): string {
+    if (!$rank || $rank['slug'] === 'nuevo') return '';
+    $size = $small ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-0.5';
+    return '<span class="inline-flex items-center gap-1 rounded-full font-bold ' . $size . '" '
+         . 'style="background-color:' . e($rank['badge_color']) . '20; color:' . e($rank['badge_color']) . '">'
+         . e($rank['badge_icon']) . ' ' . e($rank['name'])
+         . '</span>';
+}
+
+function getReferralStats(int $userId): array {
+    $user = DB::fetch("
+        SELECT u.points, u.referral_code, r.* , r.id as rank_id
+        FROM users u
+        JOIN ranks r ON r.id = u.rank_id
+        WHERE u.id = $1
+    ", [$userId]);
+
+    if (empty($user['referral_code'])) {
+        $user['referral_code'] = generateReferralCode();
+        DB::query("UPDATE users SET referral_code = $1 WHERE id = $2", [$user['referral_code'], $userId]);
+    }
+
+    $nextRank = DB::fetch("
+        SELECT * FROM ranks WHERE min_points > $1 ORDER BY min_points ASC LIMIT 1
+    ", [$user['points']]);
+
+    $directCount = (int)DB::fetch("SELECT COUNT(*) as c FROM users WHERE referred_by = $1", [$userId])['c'];
+    $indirectCount = (int)DB::fetch("
+        SELECT COUNT(*) as c FROM users WHERE referred_by IN (SELECT id FROM users WHERE referred_by = $1)
+    ", [$userId])['c'];
+
+    return [
+        'points'         => (int)$user['points'],
+        'referral_code'  => $user['referral_code'],
+        'rank'           => $user,
+        'next_rank'      => $nextRank,
+        'points_to_next' => $nextRank ? max(0, (int)$nextRank['min_points'] - (int)$user['points']) : 0,
+        'direct_count'   => $directCount,
+        'indirect_count' => $indirectCount,
+    ];
+}
+
+function getReferralNetwork(int $userId): array {
+    $direct = DB::fetchAll("
+        SELECT u.id, u.email, u.role, u.created_at,
+               COALESCE(pp.full_name, split_part(u.email, '@', 1)) as display_name,
+               (SELECT COUNT(*) FROM users u2 WHERE u2.referred_by = u.id) as referral_count
+        FROM users u
+        LEFT JOIN provider_profiles pp ON pp.user_id = u.id
+        WHERE u.referred_by = $1
+        ORDER BY u.created_at DESC
+    ", [$userId]);
+    return $direct;
+}
+
+function getActiveAds(string $position): array {
+    return DB::fetchAll("
+        SELECT * FROM ads
+        WHERE position = $1
+          AND is_active = TRUE
+          AND (starts_at IS NULL OR starts_at <= NOW())
+          AND (ends_at IS NULL OR ends_at >= NOW())
+        ORDER BY sort_order, id
+    ", [$position]);
+}
+
+function renderAdBanner(array $ad): string {
+    DB::query("UPDATE ads SET impressions = impressions + 1 WHERE id = $1", [$ad['id']]);
+
+    $img = '<img src="' . e($ad['image_url']) . '" alt="' . e($ad['title']) . '" class="w-full rounded-2xl object-cover">';
+
+    if (!empty($ad['link_url'])) {
+        return '<a href="/ads-click.php?id=' . (int)$ad['id'] . '" target="_blank" rel="noopener" class="block mb-6">' . $img . '</a>';
+    }
+
+    return '<div class="mb-6">' . $img . '</div>';
+}
+
+function renderProviderCard(array $pro): string {
+    $avatar = getAvatar($pro['avatar_url'] ?? null, $pro['full_name'], '200');
+    $stars  = renderStars((float)($pro['rating_avg'] ?? 0));
+    $loc    = trim(($pro['city'] ?? '') . ', ' . ($pro['country'] ?? ''), ', ');
+
+    $rankBadge = '';
+    if (!empty($pro['rank_slug']) && $pro['rank_slug'] !== 'nuevo') {
+        $rankBadge = renderRankBadge([
+            'slug'       => $pro['rank_slug'],
+            'name'       => $pro['rank_name'],
+            'badge_icon' => $pro['rank_icon'],
+            'badge_color'=> $pro['rank_color'],
+        ], true);
+    }
+
+    ob_start();
+    ?>
+    <div class="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <a href="/p/<?= e($pro['slug']) ?>" class="flex flex-col flex-1">
+            <div class="relative h-32 sm:h-40 bg-gradient-to-br from-brand-800 to-brand-600 overflow-hidden">
+                <?php if (!empty($pro['cover_url'])): ?>
+                    <img src="<?= e($pro['cover_url']) ?>" alt="" class="w-full h-full object-cover opacity-60">
+                <?php else: ?>
+                    <div class="absolute inset-0 opacity-20" style="background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&h=160&q=50'); background-size:cover;"></div>
+                <?php endif; ?>
+                <?php if ($pro['is_featured']): ?>
+                <span class="absolute top-3 right-3 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full">Destacado</span>
+                <?php endif; ?>
+                <?php if ($pro['is_verified']): ?>
+                <span class="absolute top-3 left-3 bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-full border border-white/30">✓ Verificado</span>
+                <?php endif; ?>
+            </div>
+            <div class="flex flex-col flex-1 p-4 sm:p-5 -mt-8 relative">
+                <img src="<?= e($avatar) ?>" alt="<?= e($pro['full_name']) ?>"
+                     class="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-md mb-3">
+                <div class="flex items-start justify-between gap-2 mb-1">
+                    <h3 class="font-bold text-gray-900 text-base leading-tight group-hover:text-brand-700 transition-colors"><?= e($pro['full_name']) ?></h3>
+                    <?php if ($rankBadge): ?>
+                    <div class="flex-shrink-0 mt-0.5"><?= $rankBadge ?></div>
+                    <?php endif; ?>
+                </div>
+                <?php if ($pro['tagline']): ?>
+                <p class="text-gray-500 text-xs mb-2 line-clamp-2"><?= e($pro['tagline']) ?></p>
+                <?php endif; ?>
+                <div class="flex items-center gap-2 mb-3">
+                    <?= $stars ?>
+                    <?php if ($pro['rating_count'] > 0): ?>
+                    <span class="text-xs text-gray-400">(<?= (int)$pro['rating_count'] ?>)</span>
+                    <?php endif; ?>
+                </div>
+                <div class="mt-auto flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1 text-xs text-gray-500 min-w-0">
+                        <svg class="w-3.5 h-3.5 text-brand-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        </svg>
+                        <span class="truncate"><?= e($loc ?: 'N/A') ?></span>
+                    </div>
+                    <?php if ($pro['category_name']): ?>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0" style="background-color: <?= e($pro['category_color'] ?? '#15803d') ?>20; color: <?= e($pro['category_color'] ?? '#15803d') ?>">
+                        <?= e($pro['category_name']) ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </a>
+        <?php if (!empty($pro['whatsapp'])): ?>
+        <a href="https://wa.me/<?= e(preg_replace('/[^0-9]/', '', $pro['whatsapp'])) ?>" target="_blank" rel="noopener"
+           class="flex items-center justify-center gap-1.5 bg-green-50 text-green-700 text-xs font-bold py-2.5 hover:bg-green-100 transition-colors border-t border-gray-100">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm0 1.67c2.2 0 4.27.86 5.82 2.42a8.183 8.183 0 012.41 5.82c0 4.54-3.7 8.23-8.24 8.23-1.48 0-2.93-.39-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.188 8.188 0 01-1.26-4.38c0-4.54 3.7-8.23 8.26-8.23z"/></svg>
+            Contactar por WhatsApp
+        </a>
+        <?php endif; ?>
+    </div>
+    <?php
+    return ob_get_clean();
 }
 
 // Unsplash category cover images (IDs hardcodeados de fotos libres)

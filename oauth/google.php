@@ -16,6 +16,7 @@ if (!GOOGLE_CLIENT_ID) {
 $state = bin2hex(random_bytes(16));
 $_SESSION['oauth_state'] = $state;
 $_SESSION['oauth_role']  = in_array($_GET['role'] ?? '', ['provider', 'client']) ? $_GET['role'] : 'client';
+$_SESSION['oauth_ref']   = trim($_GET['ref'] ?? '');
 
 $params = http_build_query([
     'client_id'     => GOOGLE_CLIENT_ID,

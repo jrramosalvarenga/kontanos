@@ -143,6 +143,9 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
                             <a href="/my-profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Mi Perfil</a>
                             <a href="/create-service.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Nuevo Servicio</a>
                             <?php endif; ?>
+                            <?php if ($currentUser['role'] === 'admin'): ?>
+                            <a href="/admin/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Admin</a>
+                            <?php endif; ?>
                             <hr class="my-1 border-gray-100">
                             <a href="/logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Cerrar Sesión</a>
                         </div>

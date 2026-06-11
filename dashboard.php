@@ -21,6 +21,9 @@ if ($user['role'] === 'provider') {
 }
 
 $welcome = !empty($_GET['welcome']);
+$referralStats   = getReferralStats($user['id']);
+$referralNetwork = getReferralNetwork($user['id']);
+$referralLink    = APP_URL . '/register.php?ref=' . $referralStats['referral_code'];
 $pageTitle = 'Mi Panel | Kontactanos';
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -47,6 +50,91 @@ require_once __DIR__ . '/includes/header.php';
         <div class="flex gap-3">
             <a href="/create-service.php" class="btn-outline text-sm">+ Nuevo servicio</a>
             <a href="/edit-profile.php" class="btn-primary text-sm">Editar perfil</a>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Referral / network panel -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-6 mb-6">
+            <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                    <h2 class="font-bold text-gray-900">Mi Red de Referidos</h2>
+                    <?= renderRankBadge($referralStats['rank']) ?>
+                </div>
+                <p class="text-gray-500 text-sm">
+                    Invita profesionales y clientes a Kontactanos. Gana puntos por cada persona que se una con tu enlace,
+                    y también por las personas que ellos inviten.
+                </p>
+                <?php if ($referralStats['next_rank']): ?>
+                <div class="mt-3">
+                    <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span><?= $referralStats['points'] ?> pts</span>
+                        <span>Siguiente: <?= renderRankBadge($referralStats['next_rank'], true) ?> a los <?= (int)$referralStats['next_rank']['min_points'] ?> pts</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <?php
+                        $rangeStart = (int)$referralStats['rank']['min_points'];
+                        $rangeEnd   = (int)$referralStats['next_rank']['min_points'];
+                        $pct = $rangeEnd > $rangeStart
+                            ? min(100, round((($referralStats['points'] - $rangeStart) / ($rangeEnd - $rangeStart)) * 100))
+                            : 100;
+                        ?>
+                        <div class="bg-brand-500 h-2 rounded-full transition-all" style="width:<?= $pct ?>%"></div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Te faltan <?= $referralStats['points_to_next'] ?> pts para el siguiente rango.</p>
+                </div>
+                <?php else: ?>
+                <p class="text-xs font-semibold text-brand-600 mt-3">¡Has alcanzado el rango máximo! 🎉 <?= $referralStats['points'] ?> pts</p>
+                <?php endif; ?>
+            </div>
+
+            <div class="lg:w-80 flex-shrink-0">
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="bg-brand-50 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-extrabold text-brand-700"><?= $referralStats['direct_count'] ?></div>
+                        <div class="text-xs text-gray-500">Referidos directos</div>
+                    </div>
+                    <div class="bg-amber-50 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-extrabold text-amber-600"><?= $referralStats['indirect_count'] ?></div>
+                        <div class="text-xs text-gray-500">Referidos de 2do nivel</div>
+                    </div>
+                </div>
+                <label class="form-label text-xs">Tu enlace de invitación</label>
+                <div class="flex gap-2">
+                    <input type="text" readonly value="<?= e($referralLink) ?>"
+                           class="form-input text-xs flex-1 bg-gray-50" onclick="this.select()">
+                    <button onclick="copyToClipboard('<?= e($referralLink) ?>', '¡Enlace copiado! Compártelo para sumar puntos.')"
+                            class="btn-primary text-xs px-3 flex-shrink-0">Copiar</button>
+                </div>
+            </div>
+        </div>
+
+        <?php if (!empty($referralNetwork)): ?>
+        <div class="border-t border-gray-100 pt-4">
+            <h3 class="text-sm font-bold text-gray-700 mb-3">Tus referidos directos</h3>
+            <div class="space-y-2">
+                <?php foreach ($referralNetwork as $ref): ?>
+                <div class="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50">
+                    <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 text-sm">
+                        <?= $ref['role'] === 'provider' ? '🛠️' : '🔍' ?>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-800 truncate"><?= e($ref['display_name']) ?></p>
+                        <p class="text-xs text-gray-400">
+                            <?= $ref['role'] === 'provider' ? 'Profesional' : 'Cliente' ?> · <?= timeAgo($ref['created_at']) ?>
+                        </p>
+                    </div>
+                    <?php if ((int)$ref['referral_count'] > 0): ?>
+                    <span class="badge badge-green text-xs flex-shrink-0">+<?= (int)$ref['referral_count'] ?> referidos</span>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="border-t border-gray-100 pt-4 text-center text-sm text-gray-400">
+            Aún no tienes referidos. ¡Comparte tu enlace para empezar a ganar puntos!
         </div>
         <?php endif; ?>
     </div>

@@ -96,6 +96,14 @@ require_once __DIR__ . '/includes/header.php';
                     <?php if ($provider['is_featured']): ?>
                     <span class="badge bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs">⭐ Destacado</span>
                     <?php endif; ?>
+                    <?php if (!empty($provider['rank_slug']) && $provider['rank_slug'] !== 'nuevo'): ?>
+                    <?= renderRankBadge([
+                        'slug'        => $provider['rank_slug'],
+                        'name'        => $provider['rank_name'],
+                        'badge_icon'  => $provider['rank_icon'],
+                        'badge_color' => $provider['rank_color'],
+                    ]) ?>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($provider['tagline']): ?>
