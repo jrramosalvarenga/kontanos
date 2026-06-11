@@ -63,6 +63,10 @@ $activeNav = 'providers';
 require __DIR__ . '/includes/layout_header.php';
 ?>
 
+<?php if (!empty($_GET['created'])): ?>
+<div class="bg-brand-50 border border-brand-200 text-brand-700 rounded-xl px-4 py-3 mb-6 text-sm">Profesional creado correctamente.</div>
+<?php endif; ?>
+
 <?php if ($message): ?>
 <div class="bg-brand-50 border border-brand-200 text-brand-700 rounded-xl px-4 py-3 mb-6 text-sm"><?= e($message) ?></div>
 <?php endif; ?>
@@ -85,6 +89,7 @@ require __DIR__ . '/includes/layout_header.php';
     <?php if ($category || $city): ?>
     <a href="/admin/providers.php" class="btn-outline">Limpiar</a>
     <?php endif; ?>
+    <a href="/admin/provider-new.php" class="btn-primary sm:ml-auto text-center">+ Agregar profesional</a>
 </form>
 
 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

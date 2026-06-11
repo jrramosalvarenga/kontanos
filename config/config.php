@@ -58,3 +58,13 @@ if (!defined('GOOGLE_CLIENT_SECRET')) {
     define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
 }
 define('GOOGLE_REDIRECT_URI',  APP_URL . '/oauth/callback.php');
+
+// Facebook Login
+// Obtén tus credenciales en: https://developers.facebook.com/apps
+if (!defined('FACEBOOK_APP_ID')) {
+    define('FACEBOOK_APP_ID', getenv('FACEBOOK_APP_ID') ?: '');
+}
+if (!defined('FACEBOOK_APP_SECRET')) {
+    define('FACEBOOK_APP_SECRET', getenv('FACEBOOK_APP_SECRET') ?: '');
+}
+define('FACEBOOK_REDIRECT_URI', APP_URL . '/oauth/facebook-callback.php');

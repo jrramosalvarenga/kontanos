@@ -35,6 +35,7 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255),
     google_id VARCHAR(100) UNIQUE,
+    facebook_id VARCHAR(100) UNIQUE,
     role VARCHAR(20) NOT NULL DEFAULT 'client' CHECK (role IN ('provider', 'client', 'admin')),
     is_verified BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,

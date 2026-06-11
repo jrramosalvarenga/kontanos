@@ -14,7 +14,7 @@ $state = $_GET['state'] ?? '';
 $error = $_GET['error'] ?? '';
 
 if ($error || !$code) {
-    header('Location: /login.php?error=' . urlencode('Autenticación con Google cancelada.'));
+    header('Location: /login.php?error=' . urlencode('Autenticación con Facebook cancelada.'));
     exit;
 }
 
@@ -27,47 +27,51 @@ $role = $_SESSION['oauth_role'] ?? 'client';
 $refCode = $_SESSION['oauth_ref'] ?? '';
 unset($_SESSION['oauth_state'], $_SESSION['oauth_role'], $_SESSION['oauth_ref']);
 
-// Exchange code for tokens
-$tokenResponse = httpPost('https://oauth2.googleapis.com/token', [
+// Exchange code for access token
+$tokenUrl = 'https://graph.facebook.com/v19.0/oauth/access_token?' . http_build_query([
+    'client_id'     => FACEBOOK_APP_ID,
+    'client_secret' => FACEBOOK_APP_SECRET,
+    'redirect_uri'  => FACEBOOK_REDIRECT_URI,
     'code'          => $code,
-    'client_id'     => GOOGLE_CLIENT_ID,
-    'client_secret' => GOOGLE_CLIENT_SECRET,
-    'redirect_uri'  => GOOGLE_REDIRECT_URI,
-    'grant_type'    => 'authorization_code',
 ]);
+$tokenResponse = httpGet($tokenUrl);
 
 if (!isset($tokenResponse['access_token'])) {
-    header('Location: /login.php?error=' . urlencode('Error al obtener token de Google.'));
+    header('Location: /login.php?error=' . urlencode('Error al obtener token de Facebook.'));
     exit;
 }
 
-// Get user profile from Google
-$profile = httpGet(
-    'https://www.googleapis.com/oauth2/v3/userinfo',
-    ['Authorization: Bearer ' . $tokenResponse['access_token']]
-);
+// Get user profile from Facebook Graph API
+$profileUrl = 'https://graph.facebook.com/me?' . http_build_query([
+    'fields'       => 'id,name,email,picture.type(large)',
+    'access_token' => $tokenResponse['access_token'],
+]);
+$profile = httpGet($profileUrl);
 
-if (!isset($profile['sub'])) {
-    header('Location: /login.php?error=' . urlencode('No se pudo obtener el perfil de Google.'));
+if (!isset($profile['id'])) {
+    header('Location: /login.php?error=' . urlencode('No se pudo obtener el perfil de Facebook.'));
     exit;
 }
 
-$googleId = $profile['sub'];
-$email    = strtolower(trim($profile['email'] ?? ''));
-$name     = $profile['name']    ?? '';
-$avatar   = $profile['picture'] ?? '';
+$facebookId = $profile['id'];
+$email      = strtolower(trim($profile['email'] ?? ''));
+$name       = $profile['name'] ?? '';
+$avatar     = $profile['picture']['data']['url'] ?? '';
+
+if (!$email) {
+    $email = 'fb_' . $facebookId . '@facebook.kontanos.local';
+}
 
 // Find or create user
-$user = DB::fetch("SELECT * FROM users WHERE google_id = $1", [$googleId]);
+$user = DB::fetch("SELECT * FROM users WHERE facebook_id = $1", [$facebookId]);
 
-if (!$user && $email) {
+if (!$user) {
     $user = DB::fetch("SELECT * FROM users WHERE email = $1", [$email]);
 }
 
 if ($user) {
-    // Update google_id if not set
-    if (!$user['google_id']) {
-        DB::query("UPDATE users SET google_id = $1, updated_at = NOW() WHERE id = $2", [$googleId, $user['id']]);
+    if (!$user['facebook_id']) {
+        DB::query("UPDATE users SET facebook_id = $1, updated_at = NOW() WHERE id = $2", [$facebookId, $user['id']]);
     }
     DB::query("UPDATE users SET last_login = NOW() WHERE id = $1", [$user['id']]);
 } else {
@@ -82,8 +86,8 @@ if ($user) {
     DB::conn()->beginTransaction();
     try {
         $userId = DB::insert(
-            "INSERT INTO users (email, google_id, role, is_verified, referral_code, referred_by) VALUES ($1, $2, $3, TRUE, $4, $5) RETURNING id",
-            [$email, $googleId, $role, $referralCode, $referrerId]
+            "INSERT INTO users (email, facebook_id, role, is_verified, referral_code, referred_by) VALUES ($1, $2, $3, TRUE, $4, $5) RETURNING id",
+            [$email, $facebookId, $role, $referralCode, $referrerId]
         );
 
         if ($role === 'provider' && $name) {
@@ -103,7 +107,7 @@ if ($user) {
         $user = DB::fetch("SELECT * FROM users WHERE id = $1", [$userId]);
     } catch (Exception $e) {
         DB::conn()->rollBack();
-        error_log('Google OAuth create user: ' . $e->getMessage());
+        error_log('Facebook OAuth create user: ' . $e->getMessage());
         header('Location: /login.php?error=' . urlencode('Error al crear la cuenta. Intenta de nuevo.'));
         exit;
     }

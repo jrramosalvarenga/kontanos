@@ -17,6 +17,32 @@ function e(?string $str): string {
     return h($str ?? '');
 }
 
+function httpPost(string $url, array $data): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => http_build_query($data),
+        CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $body = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($body ?: '{}', true) ?: [];
+}
+
+function httpGet(string $url, array $headers = []): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => array_merge(['Accept: application/json'], $headers),
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $body = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($body ?: '{}', true) ?: [];
+}
+
 function getCategories(): array {
     return DB::fetchAll("SELECT * FROM categories WHERE is_active = TRUE ORDER BY sort_order");
 }
