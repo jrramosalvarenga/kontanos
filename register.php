@@ -132,7 +132,7 @@ require_once __DIR__ . '/includes/header.php';
                   id="register-form"
                   class="space-y-5"
                   x-data="{
-                      locations: <?= $locationsJson ?>,
+                      locations: <?= e($locationsJson) ?>,
                       selectedCountry: '<?= addslashes($selectedCountry) ?>',
                       selectedCity: <?= $selectedLocationId ?: 'null' ?>,
                       get countries() { return Object.keys(this.locations); },

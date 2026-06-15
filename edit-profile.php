@@ -136,7 +136,7 @@ require_once __DIR__ . '/includes/header.php';
 
     <form method="POST" action="/edit-profile.php" class="space-y-6"
           x-data="{
-              locations: <?= $locationsJson ?>,
+              locations: <?= e($locationsJson) ?>,
               selectedCountry: '<?= addslashes($currentCountry) ?>',
               selectedCity: <?= $currentLocationId ?: 'null' ?>,
               get countries() { return Object.keys(this.locations); },
