@@ -126,7 +126,7 @@ require __DIR__ . '/includes/layout_header.php';
 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" x-data="{ modal: null, tempUrl: '', previewOk: true }">
 
     <!-- Avatar edit modal -->
-    <div x-show="modal !== null" x-transition
+    <div x-show="modal !== null" x-cloak x-transition
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
          @keydown.escape.window="modal = null"
          @click.self="modal = null">

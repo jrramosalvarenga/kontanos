@@ -37,6 +37,8 @@ $navItems = [
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/custom.css">
+    <style>[x-cloak]{display:none!important}</style>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="font-sans bg-gray-50 text-gray-800 antialiased">
 <div class="flex min-h-screen">
