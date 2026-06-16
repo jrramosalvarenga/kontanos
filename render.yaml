@@ -22,6 +22,8 @@ services:
         sync: false
       - key: FACEBOOK_APP_SECRET
         sync: false
+      - key: IMGBB_API_KEY
+        sync: false
 
 databases:
   - name: kontanos-db

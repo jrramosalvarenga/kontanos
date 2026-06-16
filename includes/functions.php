@@ -2,23 +2,37 @@
 require_once __DIR__ . '/db.php';
 
 function saveAvatarUpload(array $file, int $userId): ?string {
-    $allowed = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'];
-    $mime    = mime_content_type($file['tmp_name']);
-    $ext     = array_search($mime, $allowed, true);
-    if (!$ext) return null;
-    if ($file['size'] > 5 * 1024 * 1024) return null; // 5 MB max
+    $mimeToExt = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+    $mime = mime_content_type($file['tmp_name']);
+    if (!isset($mimeToExt[$mime])) return null;
+    if ($file['size'] > 5 * 1024 * 1024) return null;
 
-    $uploadDir = __DIR__ . '/../assets/uploads/avatars/';
-    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-
-    // Remove old avatar files for this user
-    foreach (glob($uploadDir . 'u' . $userId . '_*') as $old) {
-        @unlink($old);
+    // ImgBB (external host — works on read-only filesystems like Render)
+    $apiKey = getenv('IMGBB_API_KEY');
+    if ($apiKey) {
+        $ch = curl_init('https://api.imgbb.com/1/upload');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => [
+                'key'   => $apiKey,
+                'image' => base64_encode(file_get_contents($file['tmp_name'])),
+                'name'  => 'avatar_u' . $userId,
+            ],
+            CURLOPT_TIMEOUT => 30,
+        ]);
+        $resp = curl_exec($ch);
+        curl_close($ch);
+        $data = json_decode($resp, true);
+        return $data['data']['url'] ?? null;
     }
 
-    $filename = 'u' . $userId . '_' . time() . '.' . $ext;
+    // Local fallback (for development)
+    $uploadDir = __DIR__ . '/../assets/uploads/avatars/';
+    if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+    foreach (glob($uploadDir . 'u' . $userId . '_*') ?: [] as $old) @unlink($old);
+    $filename = 'u' . $userId . '_' . time() . '.' . $mimeToExt[$mime];
     if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) return null;
-
     return '/assets/uploads/avatars/' . $filename;
 }
 
