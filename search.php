@@ -45,8 +45,21 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <!-- Page header -->
-<div class="bg-white border-b border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="bg-brand-950 border-b border-brand-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Title -->
+        <div class="mb-5 text-center sm:text-left">
+            <h1 class="text-2xl font-bold text-white">
+                <?php if ($q): ?>
+                    Resultados para "<span class="text-brand-400"><?= e($q) ?></span>"
+                <?php elseif ($activeCategory): ?>
+                    <?= e($activeCategory['name']) ?>
+                <?php else: ?>
+                    Encuentra el profesional que necesitas
+                <?php endif; ?>
+            </h1>
+        </div>
+
         <!-- Search form with cascade country→region→city -->
         <form method="GET" action="/search.php" class="flex flex-col sm:flex-row gap-3 mb-6"
               x-data="{
@@ -61,7 +74,7 @@ require_once __DIR__ . '/includes/header.php';
                   onRegionChange() { this.selectedCity = ''; },
                   init() { detectUserLocation(this); }
               }">
-            <div class="flex items-center gap-3 flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition-all">
+            <div class="flex items-center gap-3 flex-1 bg-white border border-white/20 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-brand-300 transition-all">
                 <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -69,49 +82,47 @@ require_once __DIR__ . '/includes/header.php';
                        class="bg-transparent outline-none w-full text-gray-800 placeholder-gray-400">
             </div>
             <!-- Country filter -->
-            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-40">
+            <div class="flex items-center gap-2 bg-white border border-white/20 rounded-xl px-3 py-2 transition-all sm:w-40">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
                 </svg>
                 <select name="country" class="bg-transparent outline-none w-full text-sm text-gray-700"
-                        x-model="selectedCountry"
-                        @change="onCountryChange()">
+                        x-model="selectedCountry" @change="onCountryChange()">
                     <option value="">País</option>
                     <template x-for="c in countries" :key="c">
                         <option :value="c" x-text="c"></option>
                     </template>
                 </select>
             </div>
-            <!-- Region/State filter -->
-            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-44">
+            <!-- Region filter -->
+            <div class="flex items-center gap-2 bg-white border border-white/20 rounded-xl px-3 py-2 transition-all sm:w-44">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
                 </svg>
                 <select name="region" class="bg-transparent outline-none w-full text-sm text-gray-700"
-                        x-model="selectedRegion"
-                        @change="onRegionChange()"
-                        :disabled="!selectedCountry">
-                    <option value=""><span x-show="!selectedCountry">Región</span><span x-show="selectedCountry">Todas</span></option>
+                        x-model="selectedRegion" @change="onRegionChange()" :disabled="!selectedCountry">
+                    <option value="" x-text="selectedCountry ? 'Región' : 'Región'"></option>
                     <template x-for="r in regions" :key="r">
                         <option :value="r" x-text="r"></option>
                     </template>
                 </select>
             </div>
             <!-- City filter -->
-            <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-brand-400 transition-all sm:w-44">
+            <div class="flex items-center gap-2 bg-white border border-white/20 rounded-xl px-3 py-2 transition-all sm:w-44">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                 </svg>
                 <select name="location" class="bg-transparent outline-none w-full text-sm text-gray-700"
-                        x-model="selectedCity"
-                        :disabled="!selectedRegion">
-                    <option value=""><span x-show="!selectedRegion">Ciudad</span><span x-show="selectedRegion">Todas</span></option>
+                        x-model="selectedCity" :disabled="!selectedRegion">
+                    <option value="" x-text="selectedRegion ? 'Ciudad' : 'Ciudad'"></option>
                     <template x-for="city in cities" :key="city.slug">
                         <option :value="city.slug" x-text="city.city"></option>
                     </template>
                 </select>
             </div>
-            <button type="submit" class="btn-primary px-8 py-3">Buscar</button>
+            <button type="submit" class="bg-brand-500 hover:bg-brand-400 text-white font-bold px-8 py-3 rounded-xl transition-colors whitespace-nowrap">
+                Buscar
+            </button>
         </form>
 
         <!-- Category chips -->
@@ -127,12 +138,12 @@ require_once __DIR__ . '/includes/header.php';
         ?>
         <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <a href="/search.php<?= $extraParams ? '?'.ltrim($extraParams, '&') : '' ?>"
-               class="filter-chip flex-shrink-0 <?= !$category ? 'active' : '' ?>">
+               class="filter-chip-dark flex-shrink-0 <?= !$category ? 'active' : '' ?>">
                 Todos
             </a>
             <?php foreach ($categories as $cat): ?>
             <a href="/search.php?category=<?= e($cat['slug']) ?><?= $extraParams ?>"
-               class="filter-chip flex-shrink-0 <?= $category === $cat['slug'] ? 'active' : '' ?>">
+               class="filter-chip-dark flex-shrink-0 <?= $category === $cat['slug'] ? 'active' : '' ?>">
                 <?= e($cat['name']) ?>
             </a>
             <?php endforeach; ?>
@@ -147,35 +158,22 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
     <!-- Results header -->
     <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-xl font-bold text-gray-900">
-                <?php if ($q): ?>
-                    Resultados para "<span class="text-brand-600"><?= e($q) ?></span>"
-                <?php elseif ($activeCategory): ?>
-                    <?= e($activeCategory['name']) ?>
-                <?php else: ?>
-                    Todos los profesionales
-                <?php endif; ?>
-            </h1>
-            <p class="text-gray-500 text-sm mt-0.5">
-                <?= count($results) ?> profesional<?= count($results) != 1 ? 'es' : '' ?> encontrado<?= count($results) != 1 ? 's' : '' ?>
-                <?php if ($activeLocation): ?>
-                    en <?= e($activeLocation['city']) ?>, <?= e($activeLocation['state']) ?>, <?= e($activeLocation['country']) ?>
-                <?php elseif ($region): ?>
-                    en <?= e($region) ?><?= $country ? ', ' . e($country) : '' ?>
-                <?php elseif ($country): ?>
-                    en <?= e($country) ?>
-                <?php endif; ?>
-            </p>
-        </div>
-
+        <p class="text-gray-500 text-sm">
+            <span class="font-semibold text-gray-800"><?= count($results) ?></span>
+            profesional<?= count($results) != 1 ? 'es' : '' ?> encontrado<?= count($results) != 1 ? 's' : '' ?>
+            <?php if ($activeLocation): ?>
+                en <span class="font-medium text-gray-700"><?= e($activeLocation['city']) ?>, <?= e($activeLocation['state']) ?>, <?= e($activeLocation['country']) ?></span>
+            <?php elseif ($region): ?>
+                en <span class="font-medium text-gray-700"><?= e($region) ?><?= $country ? ', ' . e($country) : '' ?></span>
+            <?php elseif ($country): ?>
+                en <span class="font-medium text-gray-700"><?= e($country) ?></span>
+            <?php endif; ?>
+        </p>
         <!-- Sort -->
         <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600">
-            <span>Ordenar:</span>
-            <select class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-brand-400">
+            <select class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-brand-400 bg-white">
                 <option>Mejor valorados</option>
                 <option>Más recientes</option>
-                <option>Más vistos</option>
             </select>
         </div>
     </div>

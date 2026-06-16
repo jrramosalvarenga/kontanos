@@ -208,6 +208,32 @@ body { font-family: 'Inter', system-ui, sans-serif; }
     border-color: #4ade80;
     color: #15803d;
 }
+.filter-chip-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.filter-chip-dark:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+    color: #ffffff;
+}
+.filter-chip-dark.active {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #ffffff;
+}
 
 /* ===== STAR RATING ===== */
 .star-rating { display: flex; gap: 0.25rem; }

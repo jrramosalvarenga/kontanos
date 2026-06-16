@@ -3,10 +3,12 @@ require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
 
-$pageTitle       = 'Kontactanos - Conecta con profesionales cerca de ti';
-$pageDescription = 'Publica tu servicio gratis o encuentra el profesional que necesitas en tu ciudad.';
+$pageTitle       = 'Kontactanos - Directorio de profesionales y servicios locales';
+$pageDescription = 'Encuentra plomeros, electricistas, médicos, diseñadores y más servicios en tu área. El directorio de profesionales locales más completo.';
 
 $categories = getCategories();
+$featured   = getFeaturedProviders(8);
+$homeBannerAds = getActiveAds('home_banner');
 
 $cityOptions = array_map(fn($l) => [
     'slug'  => $l['slug'],
@@ -14,107 +16,76 @@ $cityOptions = array_map(fn($l) => [
 ], getLocations());
 $cityOptionsJson = json_encode($cityOptions, JSON_UNESCAPED_UNICODE);
 
-$homeBannerAds = getActiveAds('home_banner');
+$popularTerms = ['Plomero', 'Electricista', 'Diseñador', 'Contador', 'Médico', 'Abogado', 'Mecánico'];
 
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<!-- HERO SPLIT -->
-<section class="lg:min-h-[calc(100vh-112px)] grid lg:grid-cols-5">
+<!-- ===== HERO ===== -->
+<section class="relative bg-brand-950 overflow-hidden">
+    <!-- Fondo sutil -->
+    <div class="absolute inset-0 opacity-20"
+         style="background-image: url('data:image/svg+xml,<svg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'><circle cx=\'20\' cy=\'20\' r=\'1.5\' fill=\'%23ffffff\'/></svg>');"></div>
+    <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent"></div>
 
-    <!-- LEFT: REGISTER (primary) -->
-    <div class="lg:col-span-3 bg-brand-950 flex items-center justify-center px-8 py-20 lg:py-0">
-        <div class="max-w-lg w-full">
-            <div class="inline-flex items-center gap-2 bg-brand-800/50 border border-brand-700/40 rounded-full px-3 py-1.5 text-brand-300 text-xs font-medium mb-8">
-                <span class="w-1.5 h-1.5 bg-brand-400 rounded-full animate-pulse"></span>
-                Gratis · Sin comisiones · En minutos
-            </div>
-
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-5">
-                Publica tu servicio.<br>
-                <span class="text-brand-400">Consigue más clientes.</span>
-            </h1>
-
-            <p class="text-brand-300 text-lg mb-8 leading-relaxed">
-                Crea tu perfil profesional, compártelo en WhatsApp e Instagram y empieza a recibir contactos hoy mismo.
-            </p>
-
-            <div class="space-y-3 mb-10">
-                <?php foreach ([
-                    'URL única para compartir en redes sociales',
-                    'Contacto directo — sin intermediarios ni comisiones',
-                    'Visible para miles de personas en tu ciudad',
-                ] as $benefit): ?>
-                <div class="flex items-center gap-3 text-brand-200 text-sm">
-                    <div class="w-5 h-5 bg-brand-600/30 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg class="w-3 h-3 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                        </svg>
-                    </div>
-                    <?= e($benefit) ?>
-                </div>
-                <?php endforeach; ?>
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-3">
-                <a href="/register.php?role=provider"
-                   class="flex-1 sm:flex-none bg-brand-500 hover:bg-brand-400 text-white font-bold text-base px-8 py-4 rounded-xl transition-colors text-center">
-                    Crear mi perfil gratis →
-                </a>
-                <a href="/login.php"
-                   class="flex-1 sm:flex-none border border-brand-800 hover:border-brand-600 text-brand-400 hover:text-brand-200 font-medium text-base px-8 py-4 rounded-xl transition-colors text-center">
-                    Ya tengo cuenta
-                </a>
-            </div>
-
-            <p class="text-brand-700 text-xs mt-5">
-                +10,000 profesionales ya tienen su perfil
-            </p>
+    <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-28 text-center">
+        <!-- Badge -->
+        <div class="inline-flex items-center gap-2 bg-brand-800/60 border border-brand-600/30 rounded-full px-4 py-1.5 text-brand-300 text-xs font-medium mb-6">
+            <span class="w-1.5 h-1.5 bg-brand-400 rounded-full animate-pulse"></span>
+            Directorio de profesionales locales
         </div>
-    </div>
 
-    <!-- RIGHT: SEARCH -->
-    <div class="lg:col-span-2 bg-white flex items-center justify-center px-8 py-16 lg:py-0 border-t lg:border-t-0 lg:border-l border-gray-100">
-        <div class="max-w-sm w-full">
-            <h2 class="text-2xl font-bold text-gray-900 mb-1">¿Buscas un servicio?</h2>
-            <p class="text-gray-500 text-sm mb-7">Encuentra profesionales cerca de ti</p>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-4">
+            Encuentra el profesional<br class="hidden sm:block">
+            <span class="text-brand-400">que necesitas</span>
+        </h1>
+        <p class="text-brand-300 text-lg mb-10 max-w-xl mx-auto">
+            Miles de profesionales verificados en tu ciudad, listos para ayudarte.
+        </p>
 
-            <form action="/search.php" method="GET" class="space-y-3 mb-8">
-                <div class="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition-all bg-gray-50">
-                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Search card -->
+        <div class="bg-white rounded-2xl shadow-2xl p-2 max-w-3xl mx-auto"
+             x-data="{
+                query: '',
+                selectedSlug: '',
+                open: false,
+                locations: <?= e($cityOptionsJson) ?>,
+                norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); },
+                get filtered() {
+                    if (!this.query) return this.locations.slice(0, 8);
+                    const q = this.norm(this.query);
+                    return this.locations.filter(l => this.norm(l.label).includes(q)).slice(0, 8);
+                },
+                select(loc) { this.query = loc.label; this.selectedSlug = loc.slug; this.open = false; }
+             }"
+             @click.outside="open = false">
+            <form action="/search.php" method="GET" class="flex flex-col sm:flex-row gap-2">
+                <!-- Qué -->
+                <div class="flex items-center gap-3 flex-1 px-4 py-3">
+                    <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
-                    <input type="text" name="q" placeholder="Ej: plomero, diseñador, médico..."
-                           class="w-full outline-none text-gray-800 placeholder-gray-400 text-sm bg-transparent">
+                    <input type="text" name="q"
+                           placeholder="¿Qué servicio necesitas?"
+                           class="w-full outline-none text-gray-800 placeholder-gray-400 text-base bg-transparent">
                 </div>
 
-                <div class="relative"
-                     x-data="{
-                        query: '',
-                        selectedSlug: '',
-                        open: false,
-                        locations: <?= e($cityOptionsJson) ?>,
-                        norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); },
-                        get filtered() {
-                            if (!this.query) return this.locations.slice(0, 6);
-                            const q = this.norm(this.query);
-                            return this.locations.filter(l => this.norm(l.label).includes(q)).slice(0, 6);
-                        },
-                        select(loc) { this.query = loc.label; this.selectedSlug = loc.slug; this.open = false; }
-                     }"
-                     @click.outside="open = false">
-                    <div class="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition-all bg-gray-50">
-                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        <input type="text" x-model="query" @focus="open = true" @input="selectedSlug = ''"
-                               placeholder="¿En qué ciudad?" autocomplete="off"
-                               class="w-full outline-none text-gray-800 placeholder-gray-400 text-sm bg-transparent">
-                        <input type="hidden" name="location" :value="selectedSlug">
-                    </div>
+                <div class="hidden sm:block w-px bg-gray-200 self-stretch"></div>
+
+                <!-- Dónde -->
+                <div class="flex items-center gap-3 flex-1 px-4 py-3 relative">
+                    <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <input type="text" x-model="query" @focus="open = true" @input="selectedSlug = ''"
+                           placeholder="¿En qué ciudad?"
+                           autocomplete="off"
+                           class="w-full outline-none text-gray-800 placeholder-gray-400 text-base bg-transparent">
+                    <input type="hidden" name="location" :value="selectedSlug">
+
                     <div x-show="open && filtered.length" x-cloak
-                         class="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 max-h-48 overflow-y-auto z-20">
+                         class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 max-h-56 overflow-y-auto z-30 text-left">
                         <template x-for="loc in filtered" :key="loc.slug">
                             <button type="button" @click="select(loc)"
                                     class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
@@ -124,62 +95,163 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-3 rounded-xl transition-colors">
-                    Buscar profesionales
+                        class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 py-3 rounded-xl transition-colors sm:rounded-xl text-base whitespace-nowrap">
+                    Buscar
                 </button>
             </form>
-
-            <!-- Quick categories -->
-            <div>
-                <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-3">Categorías</p>
-                <div class="flex flex-wrap gap-2">
-                    <?php foreach (array_slice($categories, 0, 8) as $cat): ?>
-                    <a href="/search.php?category=<?= e($cat['slug']) ?>"
-                       class="text-xs text-gray-600 hover:text-brand-700 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 bg-gray-50 rounded-full px-3 py-1.5 transition-all">
-                        <?= e($cat['name']) ?>
-                    </a>
-                    <?php endforeach; ?>
-                    <a href="/search.php"
-                       class="text-xs text-brand-600 hover:text-brand-800 font-semibold px-3 py-1.5 transition-colors">
-                        Ver todos →
-                    </a>
-                </div>
-            </div>
         </div>
-    </div>
-</section>
 
-<!-- CATEGORIES GRID -->
-<section class="py-14 bg-gray-50 border-t border-gray-100">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between mb-7">
-            <h2 class="text-lg font-bold text-gray-900">Todos los servicios</h2>
-            <a href="/search.php" class="text-sm text-brand-600 hover:text-brand-800 font-medium transition-colors">Ver todos →</a>
-        </div>
-        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            <?php foreach ($categories as $cat): ?>
-            <a href="/search.php?category=<?= e($cat['slug']) ?>"
-               class="group flex flex-col items-center text-center p-4 rounded-xl border border-gray-100 bg-white hover:border-brand-200 hover:shadow-md transition-all cursor-pointer">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform"
-                     style="background-color: <?= e($cat['color']) ?>18;">
-                    <?= getCategoryIconSvg($cat['icon'], $cat['color']) ?>
-                </div>
-                <span class="text-xs font-medium text-gray-700 group-hover:text-brand-700 leading-tight">
-                    <?= e($cat['name']) ?>
-                </span>
+        <!-- Búsquedas populares -->
+        <div class="mt-5 flex flex-wrap gap-2 justify-center">
+            <span class="text-brand-400 text-sm">Popular:</span>
+            <?php foreach ($popularTerms as $term): ?>
+            <a href="/search.php?q=<?= urlencode($term) ?>"
+               class="text-sm text-brand-200 hover:text-white border border-brand-700/60 hover:border-brand-400 rounded-full px-3 py-1 transition-all">
+                <?= e($term) ?>
             </a>
             <?php endforeach; ?>
         </div>
     </div>
 </section>
 
+<!-- ===== CATEGORÍAS ===== -->
+<section class="py-14 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-2xl font-extrabold text-gray-900">Explora por categoría</h2>
+                <p class="text-gray-500 text-sm mt-0.5">Encuentra el servicio que necesitas</p>
+            </div>
+            <a href="/search.php" class="hidden sm:inline text-sm text-brand-600 hover:text-brand-800 font-semibold transition-colors">
+                Ver todos →
+            </a>
+        </div>
+
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
+            <?php foreach ($categories as $cat): ?>
+            <a href="/search.php?category=<?= e($cat['slug']) ?>"
+               class="group flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white border border-gray-100 hover:border-brand-200 hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"
+                     style="background-color: <?= e($cat['color']) ?>18;">
+                    <?= getCategoryIconSvg($cat['icon'], $cat['color']) ?>
+                </div>
+                <span class="text-xs font-semibold text-gray-700 group-hover:text-brand-700 leading-tight">
+                    <?= e($cat['name']) ?>
+                </span>
+            </a>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="text-center mt-6 sm:hidden">
+            <a href="/search.php" class="text-sm text-brand-600 font-semibold hover:text-brand-800">Ver todos los servicios →</a>
+        </div>
+    </div>
+</section>
+
+<!-- ===== AD BANNER ===== -->
 <?php if (!empty($homeBannerAds)): ?>
-<section class="py-8 bg-gray-50">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <?= renderAdBanner($homeBannerAds[0]) ?>
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+    <?= renderAdBanner($homeBannerAds[0]) ?>
+</div>
+<?php endif; ?>
+
+<!-- ===== PROFESIONALES DESTACADOS ===== -->
+<?php if (!empty($featured)): ?>
+<section class="py-14 bg-white border-t border-gray-100">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-2xl font-extrabold text-gray-900">Profesionales recomendados</h2>
+                <p class="text-gray-500 text-sm mt-0.5">Verificados y con reseñas de clientes</p>
+            </div>
+            <a href="/search.php" class="hidden sm:inline text-sm text-brand-600 hover:text-brand-800 font-semibold transition-colors">
+                Ver todos →
+            </a>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <?php foreach ($featured as $pro): ?>
+            <?= renderProviderCard($pro) ?>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="text-center mt-8">
+            <a href="/search.php"
+               class="inline-flex items-center gap-2 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 text-gray-700 hover:text-brand-700 font-semibold px-8 py-3 rounded-xl transition-all text-sm">
+                Ver todos los profesionales
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+            </a>
+        </div>
     </div>
 </section>
 <?php endif; ?>
+
+<!-- ===== CTA REGISTRO ===== -->
+<section class="py-14 bg-gray-50 border-t border-gray-100">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-2 gap-4">
+            <!-- Para proveedores -->
+            <div class="bg-brand-700 rounded-2xl p-8 flex flex-col justify-between">
+                <div>
+                    <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-white mb-2">¿Ofreces un servicio?</h3>
+                    <p class="text-brand-200 text-sm leading-relaxed mb-6">
+                        Crea tu perfil gratis, compártelo en tus redes y empieza a recibir clientes hoy mismo. Sin comisiones.
+                    </p>
+                    <ul class="space-y-2 mb-6">
+                        <?php foreach (['Perfil con URL única compartible', 'Contacto directo con clientes', 'Visible en búsquedas locales'] as $b): ?>
+                        <li class="flex items-center gap-2 text-brand-200 text-sm">
+                            <svg class="w-4 h-4 text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <?= e($b) ?>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <a href="/register.php?role=provider"
+                   class="block text-center bg-white text-brand-700 hover:bg-brand-50 font-bold px-6 py-3 rounded-xl transition-colors text-sm">
+                    Publicar mi servicio gratis →
+                </a>
+            </div>
+
+            <!-- Para clientes -->
+            <div class="bg-white border border-gray-200 rounded-2xl p-8 flex flex-col justify-between">
+                <div>
+                    <div class="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-gray-900 mb-2">¿Necesitas un profesional?</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                        Busca entre miles de profesionales en tu ciudad. Lee reseñas, compara perfiles y contáctalos directamente.
+                    </p>
+                    <ul class="space-y-2 mb-6">
+                        <?php foreach (['Perfiles con reseñas verificadas', 'Búsqueda por ciudad y categoría', 'Contacto directo por WhatsApp o email'] as $b): ?>
+                        <li class="flex items-center gap-2 text-gray-500 text-sm">
+                            <svg class="w-4 h-4 text-brand-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <?= e($b) ?>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <a href="/search.php"
+                   class="block text-center bg-brand-700 hover:bg-brand-800 text-white font-bold px-6 py-3 rounded-xl transition-colors text-sm">
+                    Buscar profesionales →
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
 
@@ -200,6 +272,6 @@ function getCategoryIconSvg(string $icon, string $color): string {
         'paw'              => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>',
     ];
     $path = $icons[$icon] ?? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>';
-    return '<svg class="w-5 h-5" fill="none" stroke="' . $color . '" viewBox="0 0 24 24">' . $path . '</svg>';
+    return '<svg class="w-6 h-6" fill="none" stroke="' . $color . '" viewBox="0 0 24 24">' . $path . '</svg>';
 }
 ?>
