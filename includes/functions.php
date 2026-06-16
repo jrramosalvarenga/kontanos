@@ -27,12 +27,13 @@ function saveAvatarUpload(array $file, int $userId): ?string {
         return $data['data']['url'] ?? null;
     }
 
-    // Local fallback (for development)
+    // Local fallback (development only — will silently fail on read-only hosts)
     $uploadDir = __DIR__ . '/../assets/uploads/avatars/';
     if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+    if (!is_writable($uploadDir)) return null;
     foreach (glob($uploadDir . 'u' . $userId . '_*') ?: [] as $old) @unlink($old);
     $filename = 'u' . $userId . '_' . time() . '.' . $mimeToExt[$mime];
-    if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) return null;
+    if (!@move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) return null;
     return '/assets/uploads/avatars/' . $filename;
 }
 
