@@ -39,6 +39,9 @@ $services  = getProviderServices($provider['id']);
 $reviews   = getProviderReviews($provider['id']);
 $portfolio = getProviderPortfolio($provider['id']);
 
+$currentUser = isLoggedIn() ? currentUser() : null;
+$isOwner     = $currentUser && (int)$currentUser['id'] === (int)$provider['user_id'];
+
 // Get tags
 $tags = DB::fetchAll("
     SELECT t.name FROM tags t
@@ -76,15 +79,88 @@ require_once __DIR__ . '/includes/header.php';
     <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-20">
         <div class="flex flex-col sm:flex-row items-start sm:items-end gap-6">
             <!-- Avatar -->
-            <div class="relative flex-shrink-0">
-                <img src="<?= e($avatar) ?>"
-                     alt="<?= e($provider['full_name']) ?>"
-                     class="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover border-4 border-white/30 shadow-2xl">
+            <div class="relative flex-shrink-0"
+                 <?php if ($isOwner): ?>
+                 x-data="{
+                     avatarModal: false,
+                     tempUrl: '<?= addslashes(e($provider['avatar_url'] ?? '')) ?>',
+                     previewOk: true
+                 }"
+                 <?php endif; ?>>
+
+                <div class="relative <?= $isOwner ? 'group cursor-pointer' : '' ?>"
+                     <?= $isOwner ? '@click="avatarModal = true"' : '' ?>>
+                    <img src="<?= e($avatar) ?>"
+                         alt="<?= e($provider['full_name']) ?>"
+                         class="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover border-4 border-white/30 shadow-2xl">
+
+                    <?php if ($isOwner): ?>
+                    <div class="absolute inset-0 rounded-3xl bg-black/0 group-hover:bg-black/50 transition-all flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span class="text-white text-xs font-semibold">Cambiar foto</span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
                 <?php if ($provider['is_verified']): ?>
                 <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-brand-400 rounded-full border-2 border-white flex items-center justify-center shadow">
                     <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                     </svg>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($isOwner): ?>
+                <!-- Avatar edit modal -->
+                <div x-show="avatarModal" x-transition
+                     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+                     @keydown.escape.window="avatarModal = false"
+                     @click.self="avatarModal = false">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-gray-900">Cambiar foto de perfil</h3>
+                            <button @click="avatarModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Preview -->
+                        <div class="flex justify-center mb-4">
+                            <div class="w-24 h-24 rounded-2xl bg-gray-100 border-2 border-gray-200 overflow-hidden flex items-center justify-center">
+                                <template x-if="tempUrl && previewOk">
+                                    <img :src="tempUrl" class="w-full h-full object-cover" @error="previewOk = false">
+                                </template>
+                                <template x-if="!tempUrl || !previewOk">
+                                    <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </template>
+                            </div>
+                        </div>
+                        <form method="POST" action="/update-avatar.php">
+                            <input type="hidden" name="_token" value="<?= csrfToken() ?>">
+                            <div class="mb-4">
+                                <label class="form-label">URL de la foto</label>
+                                <input type="url" name="avatar_url" class="form-input" x-model="tempUrl"
+                                       @input="previewOk = true"
+                                       placeholder="https://ejemplo.com/foto.jpg">
+                                <p class="text-xs text-gray-400 mt-1.5">
+                                    Sube tu foto a <a href="https://imgur.com" target="_blank" class="text-brand-600 hover:underline">imgur.com</a> y pega el enlace directo aquí.
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" class="btn-primary flex-1 text-sm py-2.5">Guardar foto</button>
+                                <button type="button" @click="avatarModal = false"
+                                        class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
                 <?php endif; ?>
             </div>
