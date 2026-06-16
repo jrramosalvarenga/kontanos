@@ -17,26 +17,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'q'        => trim($_POST['_q']        ?? $_GET['q']        ?? ''),
     ]));
 
+    $redirect = static function(string $msg) use ($qs): never {
+        $sep = $qs ? '&' : '?';
+        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . "{$sep}msg={$msg}");
+        exit;
+    };
+
     if ($action === 'toggle_featured') {
         DB::query("UPDATE provider_profiles SET is_featured = NOT is_featured WHERE id = $1", [$id]);
-        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=featured');
-        exit;
+        $redirect('featured');
     } elseif ($action === 'toggle_verified') {
         DB::query("UPDATE provider_profiles SET is_verified = NOT is_verified WHERE id = $1", [$id]);
-        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=verified');
-        exit;
+        $redirect('verified');
     } elseif ($action === 'set_priority') {
         DB::query("UPDATE provider_profiles SET admin_priority = $1 WHERE id = $2", [(int)$_POST['admin_priority'], $id]);
-        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=priority');
-        exit;
+        $redirect('priority');
     } elseif ($action === 'update_avatar') {
         $url = trim($_POST['avatar_url'] ?? '');
         if ($url && !filter_var($url, FILTER_VALIDATE_URL)) {
             $url = '';
         }
         DB::query("UPDATE provider_profiles SET avatar_url = $1, updated_at = NOW() WHERE id = $2", [$url ?: null, $id]);
-        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=avatar');
-        exit;
+        $redirect('avatar');
     }
 }
 
