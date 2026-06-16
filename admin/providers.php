@@ -33,11 +33,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         DB::query("UPDATE provider_profiles SET admin_priority = $1 WHERE id = $2", [(int)$_POST['admin_priority'], $id]);
         $redirect('priority');
     } elseif ($action === 'update_avatar') {
-        $url = trim($_POST['avatar_url'] ?? '');
-        if ($url && !filter_var($url, FILTER_VALIDATE_URL)) {
-            $url = '';
+        $url = null;
+        if (!empty($_FILES['avatar_file']['tmp_name']) && $_FILES['avatar_file']['error'] === UPLOAD_ERR_OK) {
+            // Get user_id from the provider profile to name the file
+            $pp = DB::fetch("SELECT user_id FROM provider_profiles WHERE id = $1", [$id]);
+            if ($pp) $url = saveAvatarUpload($_FILES['avatar_file'], $pp['user_id']);
+        } else {
+            $raw = trim($_POST['avatar_url'] ?? '');
+            if ($raw && filter_var($raw, FILTER_VALIDATE_URL)) $url = $raw;
         }
-        DB::query("UPDATE provider_profiles SET avatar_url = $1, updated_at = NOW() WHERE id = $2", [$url ?: null, $id]);
+        DB::query("UPDATE provider_profiles SET avatar_url = $1, updated_at = NOW() WHERE id = $2", [$url, $id]);
         $redirect('avatar');
     }
 }
@@ -125,7 +130,37 @@ require __DIR__ . '/includes/layout_header.php';
     <a href="/admin/provider-new.php" class="btn-primary sm:ml-auto text-center">+ Agregar profesional</a>
 </form>
 
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" x-data="{ modal: null, tempUrl: '', previewOk: true }">
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+     x-data="{
+         modal: null,
+         previewSrc: '',
+         urlInput: '',
+         fileSelected: false,
+         openModal(id, currentUrl) {
+             this.modal = id;
+             this.urlInput = currentUrl || '';
+             this.previewSrc = currentUrl || '';
+             this.fileSelected = false;
+             document.getElementById('admin-avatar-file').value = '';
+         },
+         onFileChange(e) {
+             const file = e.target.files[0];
+             if (!file) return;
+             const reader = new FileReader();
+             reader.onload = (ev) => {
+                 this.previewSrc = ev.target.result;
+                 this.urlInput = '';
+                 this.fileSelected = true;
+             };
+             reader.readAsDataURL(file);
+         },
+         onUrlInput(val) {
+             this.urlInput = val;
+             this.previewSrc = val;
+             this.fileSelected = false;
+             document.getElementById('admin-avatar-file').value = '';
+         }
+     }">
 
     <!-- Avatar edit modal -->
     <div x-show="modal !== null" x-cloak x-transition
@@ -141,36 +176,56 @@ require __DIR__ . '/includes/layout_header.php';
                     </svg>
                 </button>
             </div>
+
             <!-- Preview -->
             <div class="flex justify-center mb-4">
                 <div class="w-28 h-28 rounded-2xl bg-gray-100 border-2 border-gray-200 overflow-hidden flex items-center justify-center">
-                    <template x-if="tempUrl && previewOk">
-                        <img :src="tempUrl" class="w-full h-full object-cover" @error="previewOk = false">
+                    <template x-if="previewSrc">
+                        <img :src="previewSrc" class="w-full h-full object-cover" @error="previewSrc = ''">
                     </template>
-                    <template x-if="!tempUrl || !previewOk">
+                    <template x-if="!previewSrc">
                         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
                     </template>
                 </div>
             </div>
-            <form method="POST" action="/admin/providers.php">
+
+            <form method="POST" action="/admin/providers.php" enctype="multipart/form-data">
                 <input type="hidden" name="_token" value="<?= csrfToken() ?>">
                 <input type="hidden" name="action" value="update_avatar">
                 <input type="hidden" name="id" :value="modal">
                 <input type="hidden" name="_category" value="<?= e($category) ?>">
                 <input type="hidden" name="_city" value="<?= e($city) ?>">
                 <input type="hidden" name="_q" value="<?= e($search) ?>">
-                <div class="mb-4">
-                    <label class="form-label">URL de la imagen</label>
-                    <input type="url" name="avatar_url" class="form-input" x-model="tempUrl"
-                           @input="previewOk = true"
-                           placeholder="https://ejemplo.com/foto.jpg">
-                    <p class="text-xs text-gray-400 mt-1.5">
-                        Pega una URL directa de imagen (imgur.com, postimages.org, etc.).<br>
-                        Déjalo en blanco para eliminar la foto actual.
-                    </p>
+
+                <!-- Hidden real file input -->
+                <input type="file" id="admin-avatar-file" name="avatar_file"
+                       accept="image/jpeg,image/png,image/webp,image/gif"
+                       class="hidden"
+                       @change="onFileChange($event)">
+
+                <!-- Upload button -->
+                <button type="button"
+                        @click="document.getElementById('admin-avatar-file').click()"
+                        class="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-brand-400 text-gray-600 hover:text-brand-700 rounded-xl py-2.5 text-sm font-medium transition-colors mb-3">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    <span x-text="fileSelected ? '✓ Archivo seleccionado' : 'Subir foto desde el dispositivo'"></span>
+                </button>
+
+                <div class="relative flex items-center gap-2 mb-3">
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                    <span class="text-xs text-gray-400">o pegar URL</span>
+                    <div class="flex-1 h-px bg-gray-200"></div>
                 </div>
+
+                <input type="url" name="avatar_url" class="form-input mb-4"
+                       :value="urlInput"
+                       @input="onUrlInput($event.target.value)"
+                       placeholder="https://ejemplo.com/foto.jpg">
+
                 <div class="flex gap-2">
                     <button type="submit" class="btn-primary flex-1 py-2.5 text-sm">Guardar foto</button>
                     <button type="button" @click="modal = null"
@@ -204,7 +259,7 @@ require __DIR__ . '/includes/layout_header.php';
                 <!-- Avatar cell -->
                 <td class="px-4 py-3">
                     <button type="button"
-                            @click="modal = <?= (int)$p['id'] ?>; tempUrl = '<?= addslashes(e($p['avatar_url'] ?? '')) ?>'; previewOk = true"
+                            @click="openModal(<?= (int)$p['id'] ?>, '<?= addslashes(e($p['avatar_url'] ?? '')) ?>')"
                             class="relative group block">
                         <img src="<?= e(getAvatar($p['avatar_url'], $p['full_name'], '48')) ?>"
                              alt="" class="w-10 h-10 rounded-xl object-cover border border-gray-200">

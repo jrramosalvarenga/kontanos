@@ -1,6 +1,27 @@
 <?php
 require_once __DIR__ . '/db.php';
 
+function saveAvatarUpload(array $file, int $userId): ?string {
+    $allowed = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'];
+    $mime    = mime_content_type($file['tmp_name']);
+    $ext     = array_search($mime, $allowed, true);
+    if (!$ext) return null;
+    if ($file['size'] > 5 * 1024 * 1024) return null; // 5 MB max
+
+    $uploadDir = __DIR__ . '/../assets/uploads/avatars/';
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+    // Remove old avatar files for this user
+    foreach (glob($uploadDir . 'u' . $userId . '_*') as $old) {
+        @unlink($old);
+    }
+
+    $filename = 'u' . $userId . '_' . time() . '.' . $ext;
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) return null;
+
+    return '/assets/uploads/avatars/' . $filename;
+}
+
 function slugify(string $text): string {
     $text = mb_strtolower($text, 'UTF-8');
     $text = strtr($text, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u']);
