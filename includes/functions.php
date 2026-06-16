@@ -89,7 +89,7 @@ function getLocations(): array {
 
 function getFeaturedProviders(int $limit = 8): array {
     return DB::fetchAll("
-        SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
+        SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color, c.slug as category_slug,
                l.city, l.state, l.country,
                u.email,
                rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
@@ -106,7 +106,7 @@ function getFeaturedProviders(int $limit = 8): array {
 
 function getProviderBySlug(string $slug): ?array {
     return DB::fetch("
-        SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
+        SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color, c.slug as category_slug,
                l.city, l.state, l.country,
                u.email,
                rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
@@ -167,7 +167,7 @@ function searchProviders(array $filters): array {
     $order = "pp.admin_priority DESC, COALESCE(rk.search_boost, 0) DESC, pp.is_featured DESC, pp.rating_avg DESC, pp.profile_views DESC";
 
     return DB::fetchAll("
-        SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
+        SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color, c.slug as category_slug,
                l.city, l.state, l.country,
                rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
         FROM provider_profiles pp
@@ -493,11 +493,18 @@ function renderProviderCard(array $pro): string {
     ?>
     <div class="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
         <a href="/p/<?= e($pro['slug']) ?>" class="flex flex-col flex-1">
-            <div class="relative h-32 sm:h-40 bg-gradient-to-br from-brand-800 to-brand-600 overflow-hidden">
+            <?php
+            $catColor = $pro['category_color'] ?? '#15803d';
+            $catSlug  = $pro['category_slug'] ?? '';
+            ?>
+            <div class="relative h-32 sm:h-40 overflow-hidden" style="background-color: <?= e($catColor) ?>">
                 <?php if (!empty($pro['cover_url'])): ?>
-                    <img src="<?= e($pro['cover_url']) ?>" alt="" class="w-full h-full object-cover opacity-60">
+                    <img src="<?= e($pro['cover_url']) ?>" alt="" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
                 <?php else: ?>
-                    <div class="absolute inset-0 opacity-20" style="background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&h=160&q=50'); background-size:cover;"></div>
+                    <img src="<?= e(getCategoryImage($catSlug)) ?>" alt=""
+                         class="w-full h-full object-cover" loading="lazy">
+                    <div class="absolute inset-0" style="background: linear-gradient(135deg, <?= e($catColor) ?>cc 0%, <?= e($catColor) ?>77 50%, transparent 100%)"></div>
                 <?php endif; ?>
                 <?php if ($pro['is_featured']): ?>
                 <span class="absolute top-3 right-3 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full">Destacado</span>
