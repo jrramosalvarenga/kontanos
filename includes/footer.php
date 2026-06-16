@@ -44,7 +44,6 @@
             <div>
                 <h4 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Plataforma</h4>
                 <ul class="space-y-2 text-sm text-brand-300">
-                    <li><a href="/#como-funciona" class="hover:text-white transition-colors">Cómo Funciona</a></li>
                     <li><a href="/register.php?role=provider" class="hover:text-white transition-colors">Ofrecer un Servicio</a></li>
                     <li><a href="/register.php?role=client" class="hover:text-white transition-colors">Buscar un Profesional</a></li>
                     <li><a href="/login.php" class="hover:text-white transition-colors">Iniciar Sesión</a></li>

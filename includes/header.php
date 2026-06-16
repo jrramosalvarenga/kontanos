@@ -111,9 +111,6 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
                 <a href="/search.php?type=providers" class="text-gray-600 hover:text-brand-700 font-medium transition-colors text-sm">
                     Profesionales
                 </a>
-                <a href="/#como-funciona" class="text-gray-600 hover:text-brand-700 font-medium transition-colors text-sm">
-                    Cómo Funciona
-                </a>
             </div>
 
             <!-- Search bar (desktop) -->
@@ -181,7 +178,6 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
             <input type="text" name="q" placeholder="¿Qué necesitas?" class="bg-transparent text-sm outline-none w-full">
         </form>
         <a href="/search.php" class="block py-2 text-gray-700 font-medium">Explorar Servicios</a>
-        <a href="/#como-funciona" class="block py-2 text-gray-700 font-medium">Cómo Funciona</a>
         <?php if ($currentUser): ?>
             <a href="/dashboard.php" class="block py-2 text-gray-700 font-medium">Mi Panel</a>
             <a href="/logout.php" class="block py-2 text-red-600 font-medium">Cerrar Sesión</a>
