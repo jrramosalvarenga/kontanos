@@ -323,6 +323,98 @@ function getReferralNetwork(int $userId): array {
     return $direct;
 }
 
+// ============================================================
+// Email
+// ============================================================
+
+function sendMail(string $to, string $toName, string $subject, string $html): bool {
+    $apiKey = getenv('RESEND_API_KEY');
+
+    if ($apiKey) {
+        $from = 'Kontactanos <notificaciones@' . APP_DOMAIN . '>';
+        $ch   = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode([
+                'from'    => $from,
+                'to'      => ["$toName <$to>"],
+                'subject' => $subject,
+                'html'    => $html,
+            ]),
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json',
+            ],
+            CURLOPT_TIMEOUT => 8,
+        ]);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_exec($ch);
+        curl_close($ch);
+        return $code >= 200 && $code < 300;
+    }
+
+    // Fallback PHP mail()
+    $from    = 'notificaciones@' . APP_DOMAIN;
+    $headers = implode("\r\n", [
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8',
+        'From: Kontactanos <' . $from . '>',
+        'Reply-To: ' . $from,
+    ]);
+    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $html, $headers);
+}
+
+function buildContactNotificationEmail(string $providerFirstName, array $req, string $inboxUrl): string {
+    $name    = htmlspecialchars($req['requester_name'] ?? 'Anónimo', ENT_QUOTES, 'UTF-8');
+    $email   = htmlspecialchars($req['requester_email'] ?? '', ENT_QUOTES, 'UTF-8');
+    $phone   = $req['requester_phone']
+        ? '<p style="margin:3px 0 0;color:#6b7280;font-size:13px;">📱 ' . htmlspecialchars($req['requester_phone'], ENT_QUOTES, 'UTF-8') . '</p>'
+        : '';
+    $message = nl2br(htmlspecialchars($req['message'] ?? '', ENT_QUOTES, 'UTF-8'));
+    $pName   = htmlspecialchars($providerFirstName, ENT_QUOTES, 'UTF-8');
+    $iUrl    = htmlspecialchars($inboxUrl, ENT_QUOTES, 'UTF-8');
+
+    return <<<HTML
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:24px 16px;background:#f3f4f6;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;">
+<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);">
+  <div style="background:#15803d;padding:28px 32px;">
+    <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700;line-height:1.3;">Tienes un nuevo mensaje</h1>
+    <p style="margin:6px 0 0;color:#bbf7d0;font-size:14px;">Hola {$pName}, alguien quiere contactarte a través de Kontactanos</p>
+  </div>
+  <div style="padding:28px 32px;">
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 2px;font-weight:700;color:#111827;font-size:15px;">{$name}</p>
+      <p style="margin:3px 0 0;color:#6b7280;font-size:13px;">✉️ <a href="mailto:{$email}" style="color:#15803d;text-decoration:none;">{$email}</a></p>
+      {$phone}
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0;">
+      <p style="margin:0;color:#374151;font-size:14px;line-height:1.65;">{$message}</p>
+    </div>
+    <a href="{$iUrl}" style="display:inline-block;background:#15803d;color:#fff;text-decoration:none;padding:13px 26px;border-radius:10px;font-weight:700;font-size:14px;">Ver en mi bandeja →</a>
+    <p style="color:#9ca3af;font-size:12px;margin-top:24px;line-height:1.6;">
+      Puedes responder directamente a <a href="mailto:{$email}" style="color:#15803d;">{$email}</a> o visitar tu bandeja en Kontactanos.<br>
+      <a href="{$iUrl}" style="color:#9ca3af;">{$iUrl}</a>
+    </p>
+  </div>
+</div>
+</body>
+</html>
+HTML;
+}
+
+function getPendingContactsCount(int $userId): int {
+    $row = DB::fetch("
+        SELECT COUNT(cr.id) AS cnt
+        FROM contact_requests cr
+        JOIN provider_profiles pp ON pp.id = cr.provider_id
+        WHERE pp.user_id = $1 AND cr.status = 'pending'
+    ", [$userId]);
+    return (int)($row['cnt'] ?? 0);
+}
+
 function getActiveAds(string $position): array {
     return DB::fetchAll("
         SELECT * FROM ads

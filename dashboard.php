@@ -225,7 +225,12 @@ require_once __DIR__ . '/includes/header.php';
 
         <!-- Recent contacts -->
         <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 class="font-bold text-gray-900 mb-4">Mensajes recientes</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-bold text-gray-900">Mensajes recientes</h2>
+                <a href="/inbox.php" class="text-xs text-brand-600 hover:text-brand-800 font-semibold transition-colors">
+                    Ver bandeja completa →
+                </a>
+            </div>
             <?php if (empty($contacts)): ?>
             <div class="text-center py-8 text-gray-400">
                 <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -16,7 +16,13 @@ $email      = trim($_POST['requester_email'] ?? '');
 $phone      = trim($_POST['requester_phone'] ?? '');
 $message    = trim($_POST['message'] ?? '');
 
-$provider = DB::fetch("SELECT * FROM provider_profiles WHERE id = $1", [$providerId]);
+$provider = DB::fetch("
+    SELECT pp.*, u.email AS user_email, u.id AS user_id_owner
+    FROM provider_profiles pp
+    JOIN users u ON u.id = pp.user_id
+    WHERE pp.id = $1
+", [$providerId]);
+
 if (!$provider || !$name || !$email || !$message) {
     header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?error=' . urlencode('Por favor completa todos los campos requeridos.'));
     exit;
@@ -34,8 +40,16 @@ DB::query("
     $message,
 ]);
 
-// Mark contact as new (update provider)
-DB::query("UPDATE provider_profiles SET updated_at = NOW() WHERE id = $1", [$providerId]);
+// Send email notification to provider
+if (!empty($provider['user_email'])) {
+    $providerFirstName = explode(' ', $provider['full_name'])[0];
+    $html = buildContactNotificationEmail(
+        $providerFirstName,
+        ['requester_name' => $name, 'requester_email' => $email, 'requester_phone' => $phone, 'message' => $message],
+        APP_URL . '/inbox.php'
+    );
+    sendMail($provider['user_email'], $provider['full_name'], "Nuevo mensaje de {$name} en Kontactanos", $html);
+}
 
 header('Location: /p/' . $provider['slug'] . '?success=' . urlencode('¡Mensaje enviado! ' . explode(' ', $provider['full_name'])[0] . ' te contactará pronto.'));
 exit;

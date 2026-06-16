@@ -6,6 +6,11 @@ require_once __DIR__ . '/functions.php';
 $currentUser = isLoggedIn() ? currentUser() : null;
 $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+$notifCount = 0;
+if ($currentUser && $currentUser['role'] === 'provider') {
+    $notifCount = getPendingContactsCount($currentUser['id']);
+}
+
 $pageTitle       = $pageTitle ?? APP_NAME . ' - ' . APP_TAGLINE;
 $pageDescription = $pageDescription ?? 'Conecta con los mejores profesionales y servicios cerca de ti. Encuentra plomeros, electricistas, diseñadores, médicos y más en tu área.';
 $pageImage       = $pageImage ?? APP_URL . '/assets/brand/kontanos-logo-color.png';
@@ -111,6 +116,19 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
                 <a href="/search.php?type=providers" class="text-gray-600 hover:text-brand-700 font-medium transition-colors text-sm">
                     Profesionales
                 </a>
+                <?php if ($currentUser && $currentUser['role'] === 'provider'): ?>
+                <a href="/inbox.php" class="relative flex items-center gap-1.5 text-gray-600 hover:text-brand-700 font-medium transition-colors text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    Bandeja
+                    <?php if ($notifCount > 0): ?>
+                    <span class="absolute -top-1.5 -right-3 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                        <?= min($notifCount, 9) ?><?= $notifCount > 9 ? '+' : '' ?>
+                    </span>
+                    <?php endif; ?>
+                </a>
+                <?php endif; ?>
             </div>
 
             <!-- Search bar (desktop) -->
@@ -180,6 +198,14 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
         <a href="/search.php" class="block py-2 text-gray-700 font-medium">Explorar Servicios</a>
         <?php if ($currentUser): ?>
             <a href="/dashboard.php" class="block py-2 text-gray-700 font-medium">Mi Panel</a>
+            <?php if ($currentUser['role'] === 'provider'): ?>
+            <a href="/inbox.php" class="flex items-center justify-between py-2 text-gray-700 font-medium">
+                Bandeja de solicitudes
+                <?php if ($notifCount > 0): ?>
+                <span class="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5"><?= $notifCount ?></span>
+                <?php endif; ?>
+            </a>
+            <?php endif; ?>
             <a href="/logout.php" class="block py-2 text-red-600 font-medium">Cerrar Sesión</a>
         <?php else: ?>
             <a href="/login.php" class="block py-2 text-gray-700 font-medium">Iniciar Sesión</a>
