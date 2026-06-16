@@ -315,7 +315,12 @@ require __DIR__ . '/includes/layout_header.php';
                     </form>
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <a href="/p/<?= e($p['slug']) ?>" target="_blank" class="text-brand-600 hover:underline text-xs font-semibold">Ver →</a>
+                    <div class="flex items-center justify-end gap-3">
+                        <a href="/admin/provider-edit.php?id=<?= (int)$p['id'] ?>"
+                           class="text-gray-600 hover:text-brand-700 text-xs font-semibold">Editar</a>
+                        <a href="/p/<?= e($p['slug']) ?>" target="_blank"
+                           class="text-brand-600 hover:underline text-xs font-semibold">Ver →</a>
+                    </div>
                 </td>
             </tr>
             <?php endforeach; ?>
