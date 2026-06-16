@@ -9,26 +9,44 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
     $action = $_POST['action'] ?? '';
-    $id = (int)($_POST['id'] ?? 0);
+    $id     = (int)($_POST['id'] ?? 0);
+
+    $qs = http_build_query(array_filter([
+        'category' => trim($_POST['_category'] ?? $_GET['category'] ?? ''),
+        'city'     => trim($_POST['_city']     ?? $_GET['city']     ?? ''),
+        'q'        => trim($_POST['_q']        ?? $_GET['q']        ?? ''),
+    ]));
 
     if ($action === 'toggle_featured') {
         DB::query("UPDATE provider_profiles SET is_featured = NOT is_featured WHERE id = $1", [$id]);
-        $message = 'Estado "Destacado" actualizado.';
+        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=featured');
+        exit;
     } elseif ($action === 'toggle_verified') {
         DB::query("UPDATE provider_profiles SET is_verified = NOT is_verified WHERE id = $1", [$id]);
-        $message = 'Estado "Verificado" actualizado.';
+        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=verified');
+        exit;
     } elseif ($action === 'set_priority') {
         DB::query("UPDATE provider_profiles SET admin_priority = $1 WHERE id = $2", [(int)$_POST['admin_priority'], $id]);
-        $message = 'Prioridad de búsqueda actualizada.';
+        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=priority');
+        exit;
     } elseif ($action === 'update_avatar') {
         $url = trim($_POST['avatar_url'] ?? '');
         if ($url && !filter_var($url, FILTER_VALIDATE_URL)) {
             $url = '';
         }
         DB::query("UPDATE provider_profiles SET avatar_url = $1, updated_at = NOW() WHERE id = $2", [$url ?: null, $id]);
-        $message = 'Foto de perfil actualizada.';
+        header('Location: /admin/providers.php' . ($qs ? "?$qs" : '') . '&msg=avatar');
+        exit;
     }
 }
+
+$msgs = [
+    'featured' => 'Estado "Destacado" actualizado.',
+    'verified' => 'Estado "Verificado" actualizado.',
+    'priority' => 'Prioridad de búsqueda actualizada.',
+    'avatar'   => 'Foto de perfil actualizada correctamente.',
+];
+$message = $msgs[$_GET['msg'] ?? ''] ?? '';
 
 $category = trim($_GET['category'] ?? '');
 $city     = trim($_GET['city'] ?? '');
@@ -134,10 +152,13 @@ require __DIR__ . '/includes/layout_header.php';
                     </template>
                 </div>
             </div>
-            <form method="POST" action="/admin/providers.php<?= ($category || $city || $search) ? '?' . http_build_query(['category'=>$category,'city'=>$city,'q'=>$search]) : '' ?>">
+            <form method="POST" action="/admin/providers.php">
                 <input type="hidden" name="_token" value="<?= csrfToken() ?>">
                 <input type="hidden" name="action" value="update_avatar">
                 <input type="hidden" name="id" :value="modal">
+                <input type="hidden" name="_category" value="<?= e($category) ?>">
+                <input type="hidden" name="_city" value="<?= e($city) ?>">
+                <input type="hidden" name="_q" value="<?= e($search) ?>">
                 <div class="mb-4">
                     <label class="form-label">URL de la imagen</label>
                     <input type="url" name="avatar_url" class="form-input" x-model="tempUrl"
