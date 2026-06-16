@@ -51,10 +51,12 @@ function register(array $data): array {
         );
 
         if ($role === 'provider') {
-            $slug = slugify($data['full_name']) . '-' . substr(uniqid(), -4);
+            $slug        = slugify($data['full_name']) . '-' . substr(uniqid(), -4);
+            $profileType = in_array($data['profile_type'] ?? '', ['personal', 'business']) ? $data['profile_type'] : 'personal';
+            $businessName = $profileType === 'business' ? (trim($data['business_name'] ?? '') ?: null) : null;
             DB::query("
-                INSERT INTO provider_profiles (user_id, slug, full_name, tagline, category_id, location_id, phone, whatsapp)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                INSERT INTO provider_profiles (user_id, slug, full_name, tagline, category_id, location_id, phone, whatsapp, profile_type, business_name)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             ", [
                 $userId,
                 $slug,
@@ -64,6 +66,8 @@ function register(array $data): array {
                 $data['location_id'] ?? null,
                 $data['phone'] ?? null,
                 $data['whatsapp'] ?? null,
+                $profileType,
+                $businessName,
             ]);
         }
 

@@ -8,9 +8,10 @@ if (isLoggedIn()) {
     exit;
 }
 
-$role = in_array($_GET['role'] ?? '', ['provider', 'client']) ? $_GET['role'] : 'provider';
-$errors = [];
-$refCode = trim($_POST['ref_code'] ?? $_GET['ref'] ?? '');
+$role        = in_array($_GET['role'] ?? '', ['provider', 'client']) ? $_GET['role'] : 'provider';
+$profileType = in_array($_POST['profile_type'] ?? 'personal', ['personal', 'business']) ? ($_POST['profile_type'] ?? 'personal') : 'personal';
+$errors      = [];
+$refCode     = trim($_POST['ref_code'] ?? $_GET['ref'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
@@ -135,6 +136,7 @@ require_once __DIR__ . '/includes/header.php';
                       locations: <?= e($locationsJson) ?>,
                       selectedCountry: '<?= addslashes($selectedCountry) ?>',
                       selectedCity: <?= $selectedLocationId ?: 'null' ?>,
+                      profileType: '<?= $profileType ?>',
                       get countries() { return Object.keys(this.locations); },
                       get cities() { return this.selectedCountry ? (this.locations[this.selectedCountry] || []) : []; },
                       onCountryChange() { this.selectedCity = null; }
@@ -159,12 +161,53 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <?php if ($role === 'provider'): ?>
+                <!-- Profile type selector -->
+                <div>
+                    <label class="form-label">¿Cómo vas a registrarte?</label>
+                    <input type="hidden" name="profile_type" :value="profileType">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button"
+                                @click="profileType = 'personal'"
+                                :class="profileType === 'personal'
+                                    ? 'bg-brand-700 text-white border-brand-700 shadow-sm'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'"
+                                class="border-2 rounded-xl py-3 px-3 text-sm font-semibold transition-all text-left flex items-center gap-2.5">
+                            <span class="text-xl leading-none">👤</span>
+                            <span>
+                                <span class="block">Profesional independiente</span>
+                                <span class="text-xs font-normal opacity-75">Freelancer, técnico, consultor…</span>
+                            </span>
+                        </button>
+                        <button type="button"
+                                @click="profileType = 'business'"
+                                :class="profileType === 'business'
+                                    ? 'bg-brand-700 text-white border-brand-700 shadow-sm'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'"
+                                class="border-2 rounded-xl py-3 px-3 text-sm font-semibold transition-all text-left flex items-center gap-2.5">
+                            <span class="text-xl leading-none">🏢</span>
+                            <span>
+                                <span class="block">Negocio / empresa</span>
+                                <span class="text-xs font-normal opacity-75">Taller, empresa, tienda…</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Business name (only for business type) -->
+                <div x-show="profileType === 'business'" x-transition>
+                    <label class="form-label">Nombre del negocio / empresa *</label>
+                    <input type="text" name="business_name" class="form-input"
+                           :required="profileType === 'business'"
+                           value="<?= e($_POST['business_name'] ?? '') ?>"
+                           placeholder="Ej: Electricidad Rápida S.A., Taller Mecánico López">
+                </div>
+
                 <!-- Provider fields -->
                 <div>
-                    <label class="form-label">Nombre completo / Nombre del negocio *</label>
+                    <label class="form-label" x-text="profileType === 'business' ? 'Nombre del propietario / representante *' : 'Tu nombre completo *'"></label>
                     <input type="text" name="full_name" class="form-input" required
                            value="<?= e($_POST['full_name'] ?? '') ?>"
-                           placeholder="Ej: Carlos Rodríguez o Servicio Eléctrico CR">
+                           :placeholder="profileType === 'business' ? 'Ej: Carlos Rodríguez' : 'Ej: Carlos Rodríguez'">
                 </div>
 
                 <div>

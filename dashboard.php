@@ -334,17 +334,34 @@ require_once __DIR__ . '/includes/header.php';
     <!-- ===== PERFIL + SERVICIOS ===== -->
     <div class="grid lg:grid-cols-3 gap-6">
         <!-- Profile card -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+             x-data="{
+                 avatarModal: false,
+                 tempUrl: '<?= addslashes(e($profile['avatar_url'] ?? '')) ?>',
+                 previewOk: true
+             }">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="font-bold text-gray-900 text-sm">Mi Perfil</h2>
                 <a href="/edit-profile.php" class="text-xs text-brand-600 hover:underline font-semibold">Editar</a>
             </div>
             <?php if ($profile): ?>
             <div class="flex items-center gap-3 mb-4">
-                <img src="<?= e(getAvatar($profile['avatar_url'], $profile['full_name'], '80')) ?>"
-                     alt="" class="w-14 h-14 rounded-xl object-cover border-2 border-brand-100 flex-shrink-0">
+                <!-- Avatar with edit overlay -->
+                <div class="relative flex-shrink-0 group cursor-pointer" @click="avatarModal = true" title="Cambiar foto">
+                    <img src="<?= e(getAvatar($profile['avatar_url'], $profile['full_name'], '80')) ?>"
+                         alt="" class="w-14 h-14 rounded-xl object-cover border-2 border-brand-100">
+                    <div class="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                </div>
                 <div class="min-w-0">
-                    <h3 class="font-bold text-gray-900 text-sm truncate"><?= e($profile['full_name']) ?></h3>
+                    <h3 class="font-bold text-gray-900 text-sm truncate"><?= e($profile['business_name'] ?? $profile['full_name']) ?></h3>
+                    <?php if (!empty($profile['business_name'])): ?>
+                    <p class="text-xs text-brand-600 font-medium">🏢 Negocio</p>
+                    <?php endif; ?>
                     <?php if ($profile['tagline']): ?>
                     <p class="text-xs text-gray-500 line-clamp-2"><?= e($profile['tagline']) ?></p>
                     <?php endif; ?>
@@ -353,6 +370,55 @@ require_once __DIR__ . '/includes/header.php';
                     <?php endif; ?>
                 </div>
             </div>
+
+            <!-- Avatar edit modal -->
+            <div x-show="avatarModal" x-transition
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+                 @keydown.escape.window="avatarModal = false">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" @click.stop>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-900">Cambiar foto de perfil</h3>
+                        <button @click="avatarModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Preview -->
+                    <div class="flex justify-center mb-4">
+                        <div class="w-24 h-24 rounded-2xl bg-gray-100 border-2 border-gray-200 overflow-hidden flex items-center justify-center">
+                            <template x-if="tempUrl && previewOk">
+                                <img :src="tempUrl" class="w-full h-full object-cover" @error="previewOk = false">
+                            </template>
+                            <template x-if="!tempUrl || !previewOk">
+                                <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </template>
+                        </div>
+                    </div>
+                    <form method="POST" action="/update-avatar.php">
+                        <input type="hidden" name="_token" value="<?= csrfToken() ?>">
+                        <div class="mb-4">
+                            <label class="form-label">URL de la foto</label>
+                            <input type="url" name="avatar_url" class="form-input" x-model="tempUrl"
+                                   @input="previewOk = true"
+                                   placeholder="https://ejemplo.com/foto.jpg">
+                            <p class="text-xs text-gray-400 mt-1.5">
+                                Sube tu foto a <a href="https://imgur.com" target="_blank" class="text-brand-600 hover:underline">imgur.com</a> y pega el enlace directo aquí.
+                            </p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn-primary flex-1 text-sm py-2.5">Guardar foto</button>
+                            <button type="button" @click="avatarModal = false"
+                                    class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="mb-4">
                 <div class="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Perfil completado</span>
@@ -365,12 +431,19 @@ require_once __DIR__ . '/includes/header.php';
                 <a href="/edit-profile.php" class="text-xs text-brand-600 hover:underline mt-1 inline-block">Completar perfil →</a>
                 <?php endif; ?>
             </div>
-            <div class="flex gap-2">
+            <div class="grid grid-cols-2 gap-2 mb-2">
                 <a href="/p/<?= e($profile['slug']) ?>" target="_blank"
-                   class="flex-1 text-center text-xs py-2 bg-brand-50 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 transition-colors">Ver perfil</a>
+                   class="text-center text-xs py-2 bg-brand-50 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 transition-colors">Ver perfil</a>
                 <button onclick="copyToClipboard('<?= e(APP_URL . '/p/' . $profile['slug']) ?>', '¡Enlace copiado!')"
-                        class="flex-1 text-center text-xs py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors">Copiar enlace</button>
+                        class="text-center text-xs py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors">Copiar enlace</button>
             </div>
+            <a href="/portfolio.php"
+               class="w-full flex items-center justify-center gap-1.5 text-xs py-2 border border-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-50 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Fotos de mi trabajo (<?= count(DB::fetchAll("SELECT id FROM portfolio_items WHERE provider_id = $1", [$profile['id']])) ?>)
+            </a>
             <?php else: ?>
             <div class="text-center py-4">
                 <p class="text-gray-500 text-sm mb-3">Aún no tienes perfil público.</p>

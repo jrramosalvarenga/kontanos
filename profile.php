@@ -92,7 +92,12 @@ require_once __DIR__ . '/includes/header.php';
             <!-- Info -->
             <div class="flex-1">
                 <div class="flex flex-wrap items-center gap-2 mb-1">
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white"><?= e($provider['full_name']) ?></h1>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white">
+                        <?= e(!empty($provider['business_name']) ? $provider['business_name'] : $provider['full_name']) ?>
+                    </h1>
+                    <?php if (!empty($provider['business_name'])): ?>
+                    <span class="badge bg-white/10 text-white border border-white/20 text-xs">🏢 Negocio</span>
+                    <?php endif; ?>
                     <?php if ($provider['is_featured']): ?>
                     <span class="badge bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs">⭐ Destacado</span>
                     <?php endif; ?>
@@ -106,6 +111,9 @@ require_once __DIR__ . '/includes/header.php';
                     <?php endif; ?>
                 </div>
 
+                <?php if (!empty($provider['business_name'])): ?>
+                <p class="text-brand-300 text-sm mb-1">Representado por <?= e($provider['full_name']) ?></p>
+                <?php endif; ?>
                 <?php if ($provider['tagline']): ?>
                 <p class="text-brand-200 text-lg mb-2"><?= e($provider['tagline']) ?></p>
                 <?php endif; ?>

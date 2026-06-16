@@ -15,6 +15,7 @@ $saved  = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
 
+    $ptRaw = trim($_POST['profile_type'] ?? 'personal');
     $data = [
         'full_name'        => trim($_POST['full_name'] ?? ''),
         'tagline'          => trim($_POST['tagline'] ?? ''),
@@ -30,6 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'years_experience' => (int)($_POST['years_experience'] ?? 0),
         'response_time'    => trim($_POST['response_time'] ?? ''),
         'avatar_url'       => trim($_POST['avatar_url'] ?? ''),
+        'profile_type'     => in_array($ptRaw, ['personal', 'business']) ? $ptRaw : 'personal',
+        'business_name'    => trim($_POST['business_name'] ?? ''),
     ];
 
     if (!$data['full_name']) {
@@ -37,21 +40,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
+        $businessName = ($data['profile_type'] === 'business' && $data['business_name'] !== '') ? $data['business_name'] : null;
         if ($profile) {
             DB::query("
                 UPDATE provider_profiles SET
                     full_name = $1, tagline = $2, bio = $3, phone = $4, whatsapp = $5,
                     website = $6, instagram = $7, facebook = $8, linkedin = $9,
                     category_id = $10, location_id = $11, years_experience = $12,
-                    response_time = $13, avatar_url = $14, updated_at = NOW()
-                WHERE user_id = $15
-            ", array_merge(array_values($data), [$user['id']]));
+                    response_time = $13, avatar_url = $14,
+                    profile_type = $15, business_name = $16,
+                    updated_at = NOW()
+                WHERE user_id = $17
+            ", [
+                $data['full_name'], $data['tagline'], $data['bio'], $data['phone'], $data['whatsapp'],
+                $data['website'], $data['instagram'], $data['facebook'], $data['linkedin'],
+                $data['category_id'], $data['location_id'], $data['years_experience'],
+                $data['response_time'], $data['avatar_url'],
+                $data['profile_type'], $businessName,
+                $user['id'],
+            ]);
         } else {
             $slug = slugify($data['full_name']) . '-' . substr(uniqid(), -4);
             DB::query("
-                INSERT INTO provider_profiles (user_id, slug, full_name, tagline, bio, phone, whatsapp, website, instagram, facebook, linkedin, category_id, location_id, years_experience, response_time, avatar_url)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-            ", [$user['id'], $slug, ...array_values($data)]);
+                INSERT INTO provider_profiles (user_id, slug, full_name, tagline, bio, phone, whatsapp, website, instagram, facebook, linkedin, category_id, location_id, years_experience, response_time, avatar_url, profile_type, business_name)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+            ", [
+                $user['id'], $slug,
+                $data['full_name'], $data['tagline'], $data['bio'], $data['phone'], $data['whatsapp'],
+                $data['website'], $data['instagram'], $data['facebook'], $data['linkedin'],
+                $data['category_id'], $data['location_id'], $data['years_experience'],
+                $data['response_time'], $data['avatar_url'],
+                $data['profile_type'], $businessName,
+            ]);
         }
 
         // Update tags
@@ -197,6 +217,7 @@ require_once __DIR__ . '/includes/header.php';
               get cities() { return this.selectedCountry ? (this.locations[this.selectedCountry] || []) : []; },
               onCountryChange() { this.selectedCity = null; },
 
+              profileType: '<?= addslashes($profile['profile_type'] ?? 'personal') ?>',
               avatarUrl: '<?= addslashes(e($profile['avatar_url'] ?? '')) ?>',
 
               tagInput: '',
@@ -256,12 +277,52 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
+                <!-- Tipo de perfil -->
+                <div>
+                    <label class="form-label">Tipo de perfil</label>
+                    <input type="hidden" name="profile_type" :value="profileType">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button"
+                                @click="profileType = 'personal'"
+                                :class="profileType === 'personal'
+                                    ? 'bg-brand-700 text-white border-brand-700'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'"
+                                class="border-2 rounded-xl py-2.5 px-3 text-sm font-semibold transition-all text-left flex items-center gap-2">
+                            <span class="text-lg">👤</span>
+                            <span>
+                                <span class="block text-sm">Profesional</span>
+                                <span class="text-xs font-normal opacity-70">Freelancer · independiente</span>
+                            </span>
+                        </button>
+                        <button type="button"
+                                @click="profileType = 'business'"
+                                :class="profileType === 'business'
+                                    ? 'bg-brand-700 text-white border-brand-700'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'"
+                                class="border-2 rounded-xl py-2.5 px-3 text-sm font-semibold transition-all text-left flex items-center gap-2">
+                            <span class="text-lg">🏢</span>
+                            <span>
+                                <span class="block text-sm">Negocio / empresa</span>
+                                <span class="text-xs font-normal opacity-70">Taller · empresa · tienda</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Nombre del negocio (solo para empresas) -->
+                <div x-show="profileType === 'business'" x-transition>
+                    <label class="form-label">Nombre del negocio <span class="text-red-400">*</span></label>
+                    <input type="text" name="business_name" class="form-input"
+                           value="<?= e($profile['business_name'] ?? '') ?>"
+                           placeholder="Ej: Electricidad Rápida S.A., Taller Mecánico López">
+                </div>
+
                 <!-- Nombre -->
                 <div>
-                    <label class="form-label">Nombre completo o nombre del negocio <span class="text-red-400">*</span></label>
+                    <label class="form-label" x-text="profileType === 'business' ? 'Nombre del propietario / representante *' : 'Tu nombre completo *'"></label>
                     <input type="text" name="full_name" class="form-input" required
                            value="<?= e($profile['full_name'] ?? '') ?>"
-                           placeholder="Ej: Carlos Rodríguez o Electricidad Rápida">
+                           :placeholder="profileType === 'business' ? 'Nombre del dueño o representante' : 'Ej: Carlos Rodríguez'">
                 </div>
 
                 <!-- Tagline -->
