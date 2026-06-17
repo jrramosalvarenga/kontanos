@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/push.php';
 
 requireProvider();
 verifyCsrf();
@@ -13,6 +14,7 @@ if ($profile) {
     $contactId = (int)($_POST['contact_id'] ?? 0);
     $newStatus = $_POST['new_status'] ?? '';
     if ($contactId && in_array($newStatus, ['pending', 'read', 'replied', 'closed'])) {
+        notifyClientIfReplied($contactId, $newStatus);
         DB::query(
             "UPDATE contact_requests SET status = $1 WHERE id = $2 AND provider_id = $3",
             [$newStatus, $contactId, $profile['id']]

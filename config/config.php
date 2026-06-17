@@ -68,3 +68,13 @@ if (!defined('FACEBOOK_APP_SECRET')) {
     define('FACEBOOK_APP_SECRET', getenv('FACEBOOK_APP_SECRET') ?: '');
 }
 define('FACEBOOK_REDIRECT_URI', APP_URL . '/oauth/facebook-callback.php');
+
+// Web Push (VAPID)
+// Genera tu propio par de claves con: php -r "require 'vendor/autoload.php'; print_r(Minishlink\WebPush\VAPID::createVapidKeys());"
+if (!defined('VAPID_PUBLIC_KEY')) {
+    define('VAPID_PUBLIC_KEY', getenv('VAPID_PUBLIC_KEY') ?: '');
+}
+if (!defined('VAPID_PRIVATE_KEY')) {
+    define('VAPID_PRIVATE_KEY', getenv('VAPID_PRIVATE_KEY') ?: '');
+}
+define('VAPID_SUBJECT', 'mailto:contacto@' . APP_DOMAIN);

@@ -16,7 +16,7 @@
 Thumbs.db
 desktop.ini
 
-# Composer (not used, but just in case)
+# Composer dependencies (installed via `composer install`, see Dockerfile)
 /vendor/
 
 # Claude internal session files

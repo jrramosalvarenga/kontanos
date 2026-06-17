@@ -94,5 +94,15 @@
 
 <!-- Custom JS -->
 <script src="/assets/js/app.js"></script>
+<script src="/assets/js/push.js"></script>
+
+<!-- PWA Service Worker -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+}
+</script>
 </body>
 </html>

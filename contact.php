@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/push.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /search.php');
@@ -50,6 +51,14 @@ if (!empty($provider['user_email'])) {
     );
     sendMail($provider['user_email'], $provider['full_name'], "Nuevo mensaje de {$name} en Kontactanos", $html);
 }
+
+// Send push notification to provider
+sendPushToUser(
+    (int)$provider['user_id_owner'],
+    'Nuevo mensaje de ' . $name,
+    mb_strimwidth($message, 0, 100, '...'),
+    '/inbox.php'
+);
 
 header('Location: /p/' . $provider['slug'] . '?success=' . urlencode('¡Mensaje enviado! ' . explode(' ', $provider['full_name'])[0] . ' te contactará pronto.'));
 exit;

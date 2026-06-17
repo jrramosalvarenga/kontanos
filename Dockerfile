@@ -6,11 +6,14 @@ RUN apt-get update \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 COPY docker/000-default.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 COPY . /var/www/html/
+RUN composer install --no-dev --optimize-autoloader --no-interaction --working-dir=/var/www/html
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["apache2-foreground"]

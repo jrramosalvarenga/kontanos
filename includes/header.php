@@ -45,7 +45,15 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/assets/brand/kontanos-favicon-512.png">
-    <link rel="apple-touch-icon" href="/assets/brand/kontanos-favicon-512.png">
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="<?= APP_NAME ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -161,6 +169,24 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
                             <?php if ($currentUser['role'] === 'admin'): ?>
                             <a href="/admin/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Admin</a>
                             <?php endif; ?>
+                            <button type="button"
+                                    x-data="{ subscribed: false, loading: true }"
+                                    x-init="pushIsSubscribed().then(v => { subscribed = v; loading = false })"
+                                    @click="
+                                        loading = true;
+                                        if (subscribed) {
+                                            pushUnsubscribe('<?= csrfToken() ?>').then(() => { subscribed = false; loading = false });
+                                        } else {
+                                            pushSubscribe('<?= e(VAPID_PUBLIC_KEY) ?>', '<?= csrfToken() ?>').then(ok => { subscribed = ok; loading = false });
+                                        }
+                                    "
+                                    :disabled="loading"
+                                    class="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                                <span x-text="subscribed ? 'Desactivar notificaciones' : 'Activar notificaciones'"></span>
+                            </button>
                             <hr class="my-1 border-gray-100">
                             <a href="/logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Cerrar Sesión</a>
                         </div>

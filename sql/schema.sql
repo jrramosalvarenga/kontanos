@@ -123,6 +123,16 @@ CREATE TABLE contact_requests (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Suscripciones de notificaciones push (Web Push API)
+CREATE TABLE push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh VARCHAR(255) NOT NULL,
+    auth VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Tags de habilidades
 CREATE TABLE tags (
     id SERIAL PRIMARY KEY,

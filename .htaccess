@@ -29,6 +29,11 @@ Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header set Cache-Control "max-age=2592000, public"
 </FilesMatch>
 
+# Service worker must always be revalidated so updates reach clients
+<Files "sw.js">
+    Header set Cache-Control "no-cache"
+</Files>
+
 # PHP settings
 php_value upload_max_filesize 10M
 php_value post_max_size 10M
