@@ -16,7 +16,9 @@ if ($profile) {
     if ($contactId && in_array($newStatus, ['pending', 'read', 'replied', 'closed'])) {
         notifyClientIfReplied($contactId, $newStatus);
         DB::query(
-            "UPDATE contact_requests SET status = $1 WHERE id = $2 AND provider_id = $3",
+            "UPDATE contact_requests SET status = $1,
+                replied_at = COALESCE(replied_at, CASE WHEN $1 IN ('replied', 'closed') THEN NOW() END)
+             WHERE id = $2 AND provider_id = $3",
             [$newStatus, $contactId, $profile['id']]
         );
     }

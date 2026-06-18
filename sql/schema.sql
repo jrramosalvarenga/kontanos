@@ -120,6 +120,7 @@ CREATE TABLE contact_requests (
     message TEXT,
     service_id INT REFERENCES services(id) ON DELETE SET NULL,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'read', 'replied', 'closed')),
+    replied_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

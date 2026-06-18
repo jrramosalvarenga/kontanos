@@ -23,7 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($contactId && in_array($newStatus, ['read', 'replied', 'closed', 'pending'])) {
         notifyClientIfReplied($contactId, $newStatus);
         DB::query(
-            "UPDATE contact_requests SET status = $1 WHERE id = $2 AND provider_id = $3",
+            "UPDATE contact_requests SET status = $1,
+                replied_at = COALESCE(replied_at, CASE WHEN $1 IN ('replied', 'closed') THEN NOW() END)
+             WHERE id = $2 AND provider_id = $3",
             [$newStatus, $contactId, $providerId]
         );
     }

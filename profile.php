@@ -428,7 +428,12 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-20">
                     <h3 class="font-bold text-gray-900 mb-4 text-base">Contactar a <?= e(explode(' ', $provider['full_name'])[0]) ?></h3>
 
-                    <?php if ($provider['response_time']): ?>
+                    <?php if (!empty($provider['fast_responder'])): ?>
+                    <div class="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-xl px-3 py-2 mb-5">
+                        <span>⚡</span>
+                        Responde en <?= round($provider['avg_response_hours']) ?>h en promedio
+                    </div>
+                    <?php elseif ($provider['response_time']): ?>
                     <div class="flex items-center gap-2 text-sm text-gray-600 mb-5">
                         <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         Responde <?= e($provider['response_time']) ?>

@@ -1,6 +1,26 @@
 <?php
 require_once __DIR__ . '/db.php';
 
+// Umbral para el badge/boost "Responde rápido": >=5 solicitudes, >=70% respondidas, promedio <24h
+const RESPONSE_STATS_JOIN = "
+    LEFT JOIN (
+        SELECT
+            provider_id,
+            COUNT(*) AS total_requests,
+            COUNT(*) FILTER (WHERE status IN ('replied', 'closed')) AS responded_requests,
+            AVG(EXTRACT(EPOCH FROM (replied_at - created_at)) / 3600) FILTER (WHERE replied_at IS NOT NULL) AS avg_response_hours
+        FROM contact_requests
+        GROUP BY provider_id
+    ) rs ON rs.provider_id = pp.id";
+
+const RESPONSE_STATS_SELECT = "
+    rs.total_requests, rs.responded_requests, rs.avg_response_hours,
+    (
+        COALESCE(rs.total_requests, 0) >= 5
+        AND rs.responded_requests::float / rs.total_requests >= 0.7
+        AND rs.avg_response_hours < 24
+    ) AS fast_responder";
+
 function saveAvatarUpload(array $file, int $userId): ?string {
     $mimeToExt = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
     $mime = mime_content_type($file['tmp_name']);
@@ -92,14 +112,16 @@ function getFeaturedProviders(int $limit = 8): array {
         SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color, c.slug as category_slug,
                l.city, l.state, l.country,
                u.email,
-               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
+               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color,
+               " . RESPONSE_STATS_SELECT . "
         FROM provider_profiles pp
         JOIN users u ON u.id = pp.user_id
         LEFT JOIN categories c ON c.id = pp.category_id
         LEFT JOIN locations l ON l.id = pp.location_id
         LEFT JOIN ranks rk ON rk.id = u.rank_id
+        " . RESPONSE_STATS_JOIN . "
         WHERE pp.is_featured = TRUE AND u.is_active = TRUE
-        ORDER BY pp.admin_priority DESC, COALESCE(rk.search_boost, 0) DESC, pp.rating_avg DESC, pp.profile_views DESC
+        ORDER BY pp.admin_priority DESC, COALESCE(rk.search_boost, 0) DESC, fast_responder DESC, pp.rating_avg DESC, pp.profile_views DESC
         LIMIT $1
     ", [$limit]);
 }
@@ -109,12 +131,14 @@ function getProviderBySlug(string $slug): ?array {
         SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color, c.slug as category_slug,
                l.city, l.state, l.country,
                u.email,
-               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
+               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color,
+               " . RESPONSE_STATS_SELECT . "
         FROM provider_profiles pp
         JOIN users u ON u.id = pp.user_id
         LEFT JOIN categories c ON c.id = pp.category_id
         LEFT JOIN locations l ON l.id = pp.location_id
         LEFT JOIN ranks rk ON rk.id = u.rank_id
+        " . RESPONSE_STATS_JOIN . "
         WHERE pp.slug = $1 AND u.is_active = TRUE
     ", [$slug]);
 }
@@ -164,17 +188,19 @@ function searchProviders(array $filters): array {
     }
 
     $where = implode(' AND ', $conditions);
-    $order = "pp.admin_priority DESC, COALESCE(rk.search_boost, 0) DESC, pp.is_featured DESC, pp.rating_avg DESC, pp.profile_views DESC";
+    $order = "pp.admin_priority DESC, COALESCE(rk.search_boost, 0) DESC, fast_responder DESC, pp.is_featured DESC, pp.rating_avg DESC, pp.profile_views DESC";
 
     return DB::fetchAll("
         SELECT pp.*, c.name as category_name, c.icon as category_icon, c.color as category_color, c.slug as category_slug,
                l.city, l.state, l.country,
-               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color
+               rk.slug as rank_slug, rk.name as rank_name, rk.badge_icon as rank_icon, rk.badge_color as rank_color,
+               " . RESPONSE_STATS_SELECT . "
         FROM provider_profiles pp
         JOIN users u ON u.id = pp.user_id
         LEFT JOIN categories c ON c.id = pp.category_id
         LEFT JOIN locations l ON l.id = pp.location_id
         LEFT JOIN ranks rk ON rk.id = u.rank_id
+        " . RESPONSE_STATS_JOIN . "
         WHERE $where
         ORDER BY $order
         LIMIT 50
@@ -525,10 +551,15 @@ function renderProviderCard(array $pro): string {
                 <?php if ($pro['tagline']): ?>
                 <p class="text-gray-500 text-xs mb-2 line-clamp-2"><?= e($pro['tagline']) ?></p>
                 <?php endif; ?>
-                <div class="flex items-center gap-2 mb-3">
+                <div class="flex items-center gap-2 mb-3 flex-wrap">
                     <?= $stars ?>
                     <?php if ($pro['rating_count'] > 0): ?>
                     <span class="text-xs text-gray-400">(<?= (int)$pro['rating_count'] ?>)</span>
+                    <?php endif; ?>
+                    <?php if (!empty($pro['fast_responder'])): ?>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 flex items-center gap-1">
+                        ⚡ Responde rápido
+                    </span>
                     <?php endif; ?>
                 </div>
                 <div class="mt-auto flex items-center justify-between gap-2">
