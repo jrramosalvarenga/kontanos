@@ -467,6 +467,60 @@ function buildContactNotificationEmail(string $providerFirstName, array $req, st
 HTML;
 }
 
+function buildBroadcastEmail(string $title, string $body, ?string $ctaUrl, ?string $ctaLabel): string {
+    $t    = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $b    = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+    $cta  = '';
+    if ($ctaUrl) {
+        $url   = htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8');
+        $label = htmlspecialchars($ctaLabel ?: 'Ver más', ENT_QUOTES, 'UTF-8');
+        $cta   = "<a href=\"{$url}\" style=\"display:inline-block;background:#15803d;color:#fff;text-decoration:none;padding:13px 26px;border-radius:10px;font-weight:700;font-size:14px;\">{$label} →</a>";
+    }
+
+    return <<<HTML
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:24px 16px;background:#f3f4f6;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;">
+<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);">
+  <div style="background:#15803d;padding:28px 32px;">
+    <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700;line-height:1.3;">{$t}</h1>
+  </div>
+  <div style="padding:28px 32px;">
+    <p style="margin:0 0 24px;color:#374151;font-size:14px;line-height:1.65;">{$b}</p>
+    {$cta}
+  </div>
+</div>
+</body>
+</html>
+HTML;
+}
+
+/**
+ * Envía un email a todos los usuarios de un rol (o a todos), opcionalmente con un botón de acción.
+ * Devuelve el número de envíos intentados.
+ */
+function sendEmailBroadcast(string $title, string $body, ?string $ctaUrl, ?string $ctaLabel, ?string $role = null): int {
+    $sql = "SELECT email, COALESCE(pp.full_name, split_part(u.email, '@', 1)) AS name
+            FROM users u
+            LEFT JOIN provider_profiles pp ON pp.user_id = u.id
+            WHERE u.is_active = TRUE AND u.email IS NOT NULL AND u.email != ''";
+    $params = [];
+    if ($role) {
+        $sql .= " AND u.role = $1";
+        $params[] = $role;
+    }
+
+    $users = DB::fetchAll($sql, $params);
+    $html  = buildBroadcastEmail($title, $body, $ctaUrl, $ctaLabel);
+
+    foreach ($users as $u) {
+        sendMail($u['email'], $u['name'], $title, $html);
+    }
+
+    return count($users);
+}
+
 function getPendingContactsCount(int $userId): int {
     $row = DB::fetch("
         SELECT COUNT(cr.id) AS cnt
