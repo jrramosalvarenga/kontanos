@@ -101,6 +101,7 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
 </head>
 <body class="font-sans bg-gray-50 text-gray-800 antialiased">
 
+<?php if (empty($appShell)): ?>
 <!-- Announcement bar -->
 <div class="bg-brand-700 text-white text-center py-2 px-4 text-sm font-medium">
     🚀 ¡Regístrate gratis y empieza a conectar hoy mismo! &nbsp;
@@ -164,7 +165,7 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
                             <a href="/dashboard.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Mi Panel</a>
                             <?php if ($currentUser['role'] === 'provider'): ?>
                             <a href="/my-profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Mi Perfil</a>
-                            <a href="/create-service.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Nuevo Servicio</a>
+                            <a href="/catalog.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Mi Catálogo</a>
                             <?php endif; ?>
                             <?php if ($currentUser['role'] === 'admin'): ?>
                             <a href="/admin/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">Admin</a>
@@ -239,3 +240,4 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
         <?php endif; ?>
     </div>
 </nav>
+<?php endif; ?>

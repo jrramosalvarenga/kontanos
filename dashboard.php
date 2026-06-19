@@ -14,7 +14,7 @@ $contacts = [];
 if ($user['role'] === 'provider') {
     $profile  = DB::fetch("SELECT pp.*, c.name as category_name, l.city, l.country FROM provider_profiles pp LEFT JOIN categories c ON c.id = pp.category_id LEFT JOIN locations l ON l.id = pp.location_id WHERE pp.user_id = $1", [$user['id']]);
     if ($profile) {
-        $services = getProviderServices($profile['id']);
+        $services = getProviderServices($profile['id'], false);
         $reviews  = getProviderReviews($profile['id']);
         $contacts = DB::fetchAll("
             SELECT * FROM contact_requests
@@ -54,7 +54,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
         <?php if ($user['role'] === 'provider'): ?>
         <div class="flex gap-3">
-            <a href="/create-service.php" class="btn-outline text-sm">+ Nuevo servicio</a>
+            <a href="/catalog.php" class="btn-outline text-sm">+ Mi catálogo</a>
             <a href="/edit-profile.php" class="btn-primary text-sm">Editar perfil</a>
         </div>
         <?php endif; ?>
@@ -452,30 +452,31 @@ require_once __DIR__ . '/includes/header.php';
             <?php endif; ?>
         </div>
 
-        <!-- Services -->
+        <!-- Catálogo (productos + servicios) -->
         <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-bold text-gray-900 text-sm">Mis Servicios</h2>
-                <a href="/create-service.php" class="btn-primary text-xs py-1.5 px-3">+ Agregar</a>
+                <h2 class="font-bold text-gray-900 text-sm">Mi Catálogo</h2>
+                <a href="/catalog.php" class="btn-primary text-xs py-1.5 px-3">+ Agregar</a>
             </div>
             <?php if (empty($services)): ?>
             <div class="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-                <p class="text-sm">No tienes servicios publicados.</p>
-                <a href="/create-service.php" class="text-brand-600 text-sm font-semibold hover:underline mt-1 inline-block">Publicar primer servicio →</a>
+                <p class="text-sm">Aún no tienes productos ni servicios publicados.</p>
+                <a href="/catalog.php" class="text-brand-600 text-sm font-semibold hover:underline mt-1 inline-block">Crear el primero →</a>
             </div>
             <?php else: ?>
             <div class="grid sm:grid-cols-2 gap-3">
                 <?php foreach ($services as $svc): ?>
                 <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                    <h3 class="font-semibold text-gray-900 text-sm mb-1"><?= e($svc['title']) ?></h3>
-                    <?php if ($svc['description']): ?>
-                    <p class="text-xs text-gray-500 line-clamp-2 mb-1"><?= e($svc['description']) ?></p>
+                    <h3 class="font-semibold text-gray-900 text-sm mb-1"><?= e($svc['nombre']) ?></h3>
+                    <?php if ($svc['descripcion']): ?>
+                    <p class="text-xs text-gray-500 line-clamp-2 mb-1"><?= e($svc['descripcion']) ?></p>
                     <?php endif; ?>
-                    <?php $p = formatPrice($svc['price_from'], $svc['price_to'], $svc['price_type'], $svc['currency']); ?>
+                    <?php $p = formatSimplePrice($svc['precio'] !== null ? (float)$svc['precio'] : null); ?>
                     <?php if ($p): ?><span class="text-brand-700 text-xs font-bold"><?= e($p) ?></span><?php endif; ?>
                 </div>
                 <?php endforeach; ?>
             </div>
+            <p class="text-xs text-gray-400 mt-3 text-center"><a href="/catalog.php" class="text-brand-600 hover:underline font-semibold">Gestionar catálogo completo →</a></p>
             <?php endif; ?>
         </div>
     </div>

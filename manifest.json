@@ -9,6 +9,14 @@
   "theme_color": "#15803d",
   "orientation": "portrait-primary",
   "lang": "es",
+  "shortcuts": [
+    {
+      "name": "Mi Catálogo",
+      "short_name": "Catálogo",
+      "url": "/catalog.php",
+      "icons": [{ "src": "/assets/brand/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/assets/brand/icon-192.png",

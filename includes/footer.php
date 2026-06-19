@@ -1,3 +1,4 @@
+<?php if (empty($appShell)): ?>
 <footer class="bg-brand-950 text-white mt-20">
     <!-- Wave separator -->
     <div class="w-full overflow-hidden -mt-1">
@@ -88,6 +89,7 @@
         </div>
     </div>
 </footer>
+<?php endif; ?>
 
 <!-- Toast notifications -->
 <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>

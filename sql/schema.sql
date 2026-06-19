@@ -80,18 +80,30 @@ CREATE TABLE provider_profiles (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Servicios / Productos ofrecidos por proveedor
+-- Servicios ofrecidos por proveedor (catálogo)
 CREATE TABLE services (
     id SERIAL PRIMARY KEY,
     provider_id INT NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
-    title VARCHAR(200) NOT NULL,
-    description TEXT,
-    price_from DECIMAL(12,2),
-    price_to DECIMAL(12,2),
-    price_type VARCHAR(30) DEFAULT 'fixed' CHECK (price_type IN ('fixed', 'hourly', 'negotiable', 'free_quote')),
-    currency VARCHAR(10) DEFAULT 'USD',
-    images JSONB DEFAULT '[]',
-    is_active BOOLEAN DEFAULT TRUE,
+    nombre VARCHAR(200) NOT NULL,
+    descripcion TEXT,
+    duracion_min INT,
+    precio DECIMAL(12,2),
+    imagen VARCHAR(500),
+    activo BOOLEAN DEFAULT TRUE,
+    orden INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Productos ofrecidos por proveedor (catálogo)
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    provider_id INT NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
+    nombre VARCHAR(200) NOT NULL,
+    descripcion TEXT,
+    precio DECIMAL(12,2),
+    imagen VARCHAR(500),
+    activo BOOLEAN DEFAULT TRUE,
+    orden INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -174,6 +186,8 @@ CREATE INDEX idx_provider_rating ON provider_profiles(rating_avg DESC);
 CREATE INDEX idx_provider_slug ON provider_profiles(slug);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_reviews_provider ON reviews(provider_id);
+CREATE INDEX idx_services_provider_orden ON services(provider_id, orden);
+CREATE INDEX idx_products_provider ON products(provider_id, orden);
 
 -- Full text search index
 CREATE INDEX idx_provider_search ON provider_profiles USING gin(

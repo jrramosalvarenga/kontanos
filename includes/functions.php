@@ -143,8 +143,65 @@ function getProviderBySlug(string $slug): ?array {
     ", [$slug]);
 }
 
-function getProviderServices(int $providerId): array {
-    return DB::fetchAll("SELECT * FROM services WHERE provider_id = $1 AND is_active = TRUE ORDER BY id", [$providerId]);
+function getProviderServices(int $providerId, bool $onlyActive = true): array {
+    $sql = "SELECT * FROM services WHERE provider_id = $1" . ($onlyActive ? " AND activo = TRUE" : "") . " ORDER BY orden, id";
+    return DB::fetchAll($sql, [$providerId]);
+}
+
+function getProviderProducts(int $providerId, bool $onlyActive = true): array {
+    $sql = "SELECT * FROM products WHERE provider_id = $1" . ($onlyActive ? " AND activo = TRUE" : "") . " ORDER BY orden, id";
+    return DB::fetchAll($sql, [$providerId]);
+}
+
+/**
+ * Sube una imagen de catálogo (producto o servicio). Misma estrategia que saveAvatarUpload:
+ * ImgBB en producción (filesystem de Render es de solo lectura), fallback local en desarrollo.
+ */
+function saveCatalogUpload(array $file, string $kind, int $providerId): ?string {
+    $mimeToExt = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+    $mime = mime_content_type($file['tmp_name']);
+    if (!isset($mimeToExt[$mime])) return null;
+    if ($file['size'] > MAX_FILE_SIZE) return null;
+
+    $name = $kind . '_p' . $providerId . '_' . time() . '_' . random_int(1000, 9999);
+
+    $apiKey = getenv('IMGBB_API_KEY');
+    if ($apiKey) {
+        $ch = curl_init('https://api.imgbb.com/1/upload');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => [
+                'key'   => $apiKey,
+                'image' => base64_encode(file_get_contents($file['tmp_name'])),
+                'name'  => $name,
+            ],
+            CURLOPT_TIMEOUT => 30,
+        ]);
+        $resp = curl_exec($ch);
+        curl_close($ch);
+        $data = json_decode($resp, true);
+        return $data['data']['url'] ?? null;
+    }
+
+    $uploadDir = __DIR__ . '/../assets/uploads/catalog/';
+    if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+    if (!is_writable($uploadDir)) return null;
+    $filename = $name . '.' . $mimeToExt[$mime];
+    if (!@move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) return null;
+    return '/assets/uploads/catalog/' . $filename;
+}
+
+/** Elimina la imagen local previa de un item de catálogo (no-op si está en un host externo como ImgBB). */
+function deleteCatalogUploadIfLocal(?string $imagePath): void {
+    if (!$imagePath || !str_starts_with($imagePath, '/assets/uploads/catalog/')) return;
+    $full = __DIR__ . '/..' . $imagePath;
+    if (is_file($full)) @unlink($full);
+}
+
+function formatSimplePrice(?float $precio): string {
+    if ($precio === null) return '';
+    return '$' . number_format($precio, 2);
 }
 
 function getProviderReviews(int $providerId): array {
