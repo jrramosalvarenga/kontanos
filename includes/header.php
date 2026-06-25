@@ -136,6 +136,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <a href="/search.php?type=providers" class="text-gray-600 hover:text-brand-700 font-medium transition-colors text-sm">
                     Profesionales
                 </a>
+                <a href="/leaderboard.php" class="flex items-center gap-1 text-gray-600 hover:text-brand-700 font-medium transition-colors text-sm">
+                    🏆 Ranking
+                </a>
                 <?php if ($currentUser && $currentUser['role'] === 'provider'): ?>
                 <a href="/inbox.php" class="relative flex items-center gap-1.5 text-gray-600 hover:text-brand-700 font-medium transition-colors text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,6 +237,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <input type="text" name="q" placeholder="¿Qué necesitas?" class="bg-transparent text-sm outline-none w-full">
         </form>
         <a href="/search.php" class="block py-2 text-gray-700 font-medium">Explorar Servicios</a>
+        <a href="/leaderboard.php" class="block py-2 text-gray-700 font-medium">🏆 Ranking de Profesionales</a>
         <?php if ($currentUser): ?>
             <a href="/dashboard.php" class="block py-2 text-gray-700 font-medium">Mi Panel</a>
             <?php if ($currentUser['role'] === 'provider'): ?>
