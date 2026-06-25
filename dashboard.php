@@ -53,7 +53,10 @@ require_once __DIR__ . '/includes/header.php';
             <p class="text-gray-500 text-sm mt-0.5">Hola, <?= e(explode('@', $user['email'])[0]) ?> 👋</p>
         </div>
         <?php if ($user['role'] === 'provider'): ?>
-        <div class="flex gap-3">
+        <div class="flex gap-3 flex-wrap">
+            <a href="/invite.php" class="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold text-sm px-4 py-2 rounded-xl transition-colors">
+                🚀 Invita y sube de rango
+            </a>
             <a href="/catalog.php" class="btn-outline text-sm">+ Mi catálogo</a>
             <a href="/edit-profile.php" class="btn-primary text-sm">Editar perfil</a>
         </div>
