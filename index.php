@@ -18,6 +18,30 @@ $cityOptionsJson = json_encode($cityOptions, JSON_UNESCAPED_UNICODE);
 
 $popularTerms = ['Plomero', 'Electricista', 'Diseñador', 'Contador', 'Médico', 'Abogado', 'Mecánico'];
 
+// FAQ Schema — cubre búsquedas de tendencia en Honduras relacionadas con servicios
+$schemaMarkup = json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'FAQPage',
+    'mainEntity' => [
+        ['@type' => 'Question', 'name' => '¿Dónde encuentro un plomero en Tegucigalpa?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'En Kontactanos puedes encontrar plomeros verificados en Tegucigalpa y todo Honduras. Busca, compara perfiles y contacta directamente por WhatsApp, sin intermediarios y gratis.']],
+        ['@type' => 'Question', 'name' => '¿Cómo contratar un electricista en Honduras?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Kontactanos tiene electricistas certificados en Tegucigalpa, San Pedro Sula y más ciudades. Ver calificaciones, reseñas y contactar es totalmente gratis.']],
+        ['@type' => 'Question', 'name' => '¿Dónde encontrar mecánico automotriz en San Pedro Sula?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Busca mecánicos automotrices en San Pedro Sula en Kontactanos. Compara talleres y mecánicos independientes con reseñas reales de clientes.']],
+        ['@type' => 'Question', 'name' => '¿Cómo encontrar abogado en Honduras?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'En Kontactanos encuentras abogados en Tegucigalpa, San Pedro Sula y otras ciudades de Honduras. Revisa sus perfiles y contáctalos directamente.']],
+        ['@type' => 'Question', 'name' => '¿Dónde buscar contador público en Honduras?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Kontactanos tiene contadores públicos y auditores en todo Honduras. Encuentra el profesional ideal para tu empresa o negocio personal.']],
+        ['@type' => 'Question', 'name' => '¿Cómo contratar diseñador gráfico en Honduras?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Encuentra diseñadores gráficos freelance y agencias en Honduras en Kontactanos. Compara portafolios y contrata directamente.']],
+        ['@type' => 'Question', 'name' => '¿Dónde encontrar médico particular en Tegucigalpa?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Kontactanos lista médicos particulares, especialistas y clínicas en Tegucigalpa y Honduras. Consulta perfiles, especialidades y agenda tu cita.']],
+        ['@type' => 'Question', 'name' => '¿Cómo publicar mi negocio o servicio en internet gratis en Honduras?',
+         'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Con Kontactanos puedes crear un perfil profesional gratis en menos de 2 minutos. Sin comisiones, sin cuotas mensuales. Recibe clientes por WhatsApp directamente.']],
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 
