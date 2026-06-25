@@ -1,6 +1,8 @@
 <?php
+ob_start();
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/includes/functions.php';
+ob_end_clean();
 
 header('Content-Type: application/xml; charset=utf-8');
 header('X-Robots-Tag: noindex');
