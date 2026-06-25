@@ -41,6 +41,23 @@ $currentRegion  = $activeLocation ? $activeLocation['state'] : $region;
 $pageTitle = 'Buscar Servicios y Profesionales' . ($q ? " - \"$q\"" : '') . ' | Kontactanos';
 $pageDescription = 'Encuentra los mejores profesionales y servicios cerca de ti. Plomeros, electricistas, diseñadores, médicos y más.';
 
+if (!empty($results)) {
+    $items = array_map(fn($p, $i) => [
+        '@type'    => 'ListItem',
+        'position' => $i + 1,
+        'url'      => APP_URL . '/p/' . $p['slug'],
+        'name'     => !empty($p['business_name']) ? $p['business_name'] : $p['full_name'],
+    ], $results, array_keys($results));
+    $schemaMarkup = json_encode([
+        '@context'        => 'https://schema.org',
+        '@type'           => 'ItemList',
+        'name'            => $pageTitle,
+        'description'     => $pageDescription,
+        'numberOfItems'   => count($results),
+        'itemListElement' => $items,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+}
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 

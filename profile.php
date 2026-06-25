@@ -66,6 +66,46 @@ $pageDescription = $service . ($loc ? " en $loc" : '') . '. ' .
 $pageImage       = $provider['avatar_url'] ?? getAvatar(null, $provider['full_name'], '600');
 $pageUrl         = $profileUrl;
 
+// ── JSON-LD Schema.org ──
+$schemaType = !empty($provider['business_name']) ? 'LocalBusiness' : 'ProfessionalService';
+$schema = [
+    '@context' => 'https://schema.org',
+    '@type'    => $schemaType,
+    '@id'      => $profileUrl . '#entity',
+    'name'     => !empty($provider['business_name']) ? $provider['business_name'] : $provider['full_name'],
+    'url'      => $profileUrl,
+    'image'    => $avatar,
+    'description' => $pageDescription,
+];
+if ($provider['tagline'])        $schema['slogan']       = $provider['tagline'];
+if ($provider['category_name'])  $schema['knowsAbout']   = $provider['category_name'];
+if ($provider['phone'])          $schema['telephone']    = $provider['phone'];
+if ($provider['website'])        $schema['sameAs']       = [$provider['website']];
+if ($provider['city'])           $schema['address'] = [
+    '@type'           => 'PostalAddress',
+    'addressLocality' => $provider['city'],
+    'addressCountry'  => $provider['country'] ?? 'HN',
+];
+if ((float)$provider['rating_avg'] > 0) {
+    $schema['aggregateRating'] = [
+        '@type'       => 'AggregateRating',
+        'ratingValue' => round((float)$provider['rating_avg'], 1),
+        'reviewCount' => (int)$provider['rating_count'],
+        'bestRating'  => 5,
+        'worstRating' => 1,
+    ];
+}
+if (!empty($reviews)) {
+    $schema['review'] = array_map(fn($r) => [
+        '@type'       => 'Review',
+        'author'      => ['@type' => 'Person', 'name' => $r['reviewer_name'] ?? 'Cliente'],
+        'reviewRating'=> ['@type' => 'Rating', 'ratingValue' => (int)$r['rating'], 'bestRating' => 5],
+        'reviewBody'  => $r['comment'] ?? '',
+        'datePublished' => date('Y-m-d', strtotime($r['created_at'])),
+    ], array_slice($reviews, 0, 10));
+}
+$schemaMarkup = json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 

@@ -73,6 +73,25 @@ if ($currentUser && $currentUser['role'] === 'provider') {
 
 $pageTitle = 'Ranking de Profesionales | Kontactanos';
 $pageDescription = 'Los profesionales más activos y recomendados en Kontactanos. ¿Quién está en el top?';
+
+// JSON-LD ItemList
+if (!empty($leaders)) {
+    $items = array_map(fn($l, $i) => [
+        '@type'    => 'ListItem',
+        'position' => $i + 1,
+        'url'      => APP_URL . '/p/' . $l['slug'],
+        'name'     => !empty($l['business_name']) ? $l['business_name'] : $l['full_name'],
+    ], $leaders, array_keys($leaders));
+    $schemaMarkup = json_encode([
+        '@context'        => 'https://schema.org',
+        '@type'           => 'ItemList',
+        'name'            => 'Ranking de Profesionales en Kontactanos',
+        'description'     => $pageDescription,
+        'numberOfItems'   => count($leaders),
+        'itemListElement' => $items,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+}
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 

@@ -105,6 +105,45 @@ $pageUrl         = $pageUrl ?? APP_URL . $currentPath;
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/assets/css/custom.css">
+
+    <!-- Structured Data: WebSite + Organization -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebSite",
+                "@id": "<?= APP_URL ?>/#website",
+                "url": "<?= APP_URL ?>",
+                "name": "<?= APP_NAME ?>",
+                "description": "<?= e($pageDescription) ?>",
+                "inLanguage": "es",
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "<?= APP_URL ?>/search.php?q={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                }
+            },
+            {
+                "@type": "Organization",
+                "@id": "<?= APP_URL ?>/#organization",
+                "name": "<?= APP_NAME ?>",
+                "url": "<?= APP_URL ?>",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "<?= APP_URL ?>/assets/brand/kontanos-logo-color.png"
+                },
+                "sameAs": []
+            }
+        ]
+    }
+    </script>
+<?php if (!empty($schemaMarkup)): ?>
+    <script type="application/ld+json"><?= $schemaMarkup ?></script>
+<?php endif; ?>
 </head>
 <body class="font-sans bg-gray-50 text-gray-800 antialiased">
 <!-- Google Tag Manager (noscript) -->
