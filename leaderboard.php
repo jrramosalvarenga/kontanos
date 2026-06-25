@@ -14,7 +14,7 @@ $cities = DB::fetchAll("
     FROM users u
     JOIN provider_profiles pp ON pp.user_id = u.id
     JOIN locations l ON l.id = pp.location_id
-    WHERE u.role = 'provider' AND u.points > 0 AND pp.is_active = TRUE
+    WHERE u.role = 'provider' AND u.points > 0 AND u.is_active = TRUE
     ORDER BY l.country, l.city
 ");
 
@@ -49,7 +49,7 @@ $leaders = DB::fetchAll("
     LEFT JOIN categories c ON c.id = pp.category_id
     LEFT JOIN ranks rk ON rk.id = u.rank_id
     WHERE u.role = 'provider'
-      AND pp.is_active = TRUE
+      AND u.is_active = TRUE
       AND u.points > 0
       $cityWhere
     ORDER BY u.points DESC
